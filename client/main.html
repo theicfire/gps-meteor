@@ -1,0 +1,17 @@
+<head>
+    <title>GPS Stuff</title>
+</head>
+
+<body>
+</body>
+
+<template name="Map">
+Map goes here
+{{#each coords}}
+{{>SingleCoord}}
+{{/each}}
+</template>
+
+<template name="SingleCoord">
+<div>lat: {{lat}} long: {{long}} createdAt: {{createdAt}}</div>
+</template>
