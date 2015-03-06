@@ -5,6 +5,7 @@ Meteor.startup(function () {
     }
 });
 
+// IronRouter
 Router.route('/add_coords/:lat/:long/:time', {where: 'server'})
   .post(function () {
       var coord = {
