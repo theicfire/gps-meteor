@@ -1,6 +1,9 @@
 Template.Map.helpers({
     coords: function() {
         return Coords.find();
+    },
+    count: function() {
+        return Coords.find().count();
     }
 });
 
