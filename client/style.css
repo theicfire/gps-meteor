@@ -159,3 +159,9 @@ body {
   stroke: green;
   stroke-width: 1.5px;
 }
+
+
+.map-container {
+  width: 800px;
+  height: 500px;
+}

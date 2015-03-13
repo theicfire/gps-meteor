@@ -8,6 +8,8 @@ blaze-tools@1.0.2
 boilerplate-generator@1.0.2
 callback-hook@1.0.2
 check@1.0.4
+d3@1.0.0
+dburles:google-maps@1.0.8
 ddp@1.0.14
 deps@1.0.6
 ejson@1.0.5
