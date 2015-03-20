@@ -5,6 +5,10 @@ Meteor.startup(function () {
     }
 });
 
+Meteor.publish('coords', function(num) {
+    return Coords.find({}, {'sort': ['createdAt'], skip: num, limit: 1});
+});
+
 // IronRouter
 Router.route('/add_coords/:lat/:long/:time', {where: 'server'})
   .post(function () {

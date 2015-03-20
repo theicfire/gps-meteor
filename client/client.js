@@ -18,19 +18,25 @@ Template.Map.events({
             }
         } else if (event.which == KEYS.UP) {
             event.preventDefault();
-            if (Session.get('coordNum') + 1 < Coords.find().count()) {
+            //if (Session.get('coordNum') + 1 < Coords.find().count()) {
                 Session.set('coordNum', Session.get('coordNum') + 1);
-            }
+            //}
         }
     }
 });
 
-Template.Map.rendered = function() {
+
+Template.Map.created = function() {
     this.autorun(function() {
+        Meteor.subscribe('coords', Session.get('coordNum'));
+        console.log('found num', Coords.find().count());
+        if (Coords.find().count() === 0) {
+            return;
+        }
         if (curMarker) {
             curMarker.setMap(null);
         }
-        var coord = Coords.findOne({}, {'sort': ['createdAt'], limit: 1, skip: Session.get('coordNum')});
+        var coord = Coords.findOne();
         if (typeof google !== 'undefined' && globalMap) {
             curMarker = new google.maps.Marker({
                 position: new google.maps.LatLng(coord.lat, coord.long),
