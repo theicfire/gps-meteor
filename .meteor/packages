@@ -9,3 +9,4 @@ insecure
 iron:router
 d3
 dburles:google-maps
+tmeasday:publish-counts

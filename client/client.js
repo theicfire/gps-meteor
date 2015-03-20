@@ -1,6 +1,24 @@
 var curMarker;
 var globalMap;
 var KEYS = {DOWN: 40, UP: 38};
+var centeredOnce;
+
+
+var previousCoord = function(event) {
+    event.preventDefault();
+    Session.set('liveview', false);
+    if (Session.get('coordNum') > 0) {
+        Session.set('coordNum', Session.get('coordNum') - 1);
+    }
+};
+
+var nextCoord = function(event) {
+    event.preventDefault();
+    Session.set('liveview', false);
+    if (Session.get('coordNum') + 1 < Counts.get('countCoords')) {
+        Session.set('coordNum', Session.get('coordNum') + 1);
+    }
+};
 
 Template.Map.events({
     'submit .markerCounter': function(event) {
@@ -12,32 +30,34 @@ Template.Map.events({
         var curVal = parseInt(event.target.value);
         // TODO keep this in a session variable..
         if (event.which == KEYS.DOWN) {
-            event.preventDefault();
-            if (Session.get('coordNum') > 0) {
-                Session.set('coordNum', Session.get('coordNum') - 1);
-            }
+            previousCoord(event);
         } else if (event.which == KEYS.UP) {
-            event.preventDefault();
-            //if (Session.get('coordNum') + 1 < Coords.find().count()) {
-                Session.set('coordNum', Session.get('coordNum') + 1);
-            //}
+            nextCoord(event);
         }
+    },
+    'click .previousCoord': previousCoord,
+    'click .nextCoord': nextCoord,
+    'click .liveCoord': function() {
+        Session.set('liveview', true);
     }
 });
 
 
 Template.Map.created = function() {
     this.autorun(function() {
-        Meteor.subscribe('coords', Session.get('coordNum'));
-        console.log('found num', Coords.find().count());
-        if (Coords.find().count() === 0) {
-            return;
+        if (Session.get('liveview')) {
+            Session.set('coordNum', Counts.get('countCoords') - 1);
         }
+    });
+    this.autorun(function() {
+        Meteor.subscribe('coords', Session.get('coordNum'));
+    });
+    this.autorun(function() {
         if (curMarker) {
             curMarker.setMap(null);
         }
         var coord = Coords.findOne();
-        if (typeof google !== 'undefined' && globalMap) {
+        if (coord && typeof google !== 'undefined' && globalMap) {
             curMarker = new google.maps.Marker({
                 position: new google.maps.LatLng(coord.lat, coord.long),
                 map: globalMap.instance
@@ -51,10 +71,13 @@ Template.Map.helpers({
         return Coords.find();
     },
     count: function() {
-        return Coords.find().count();
+        return Counts.get('countCoords');
     },
     coordNum: function() {
         return Session.get('coordNum');
+    },
+    liveview: function() {
+        return Session.get('liveview');
     }
 });
 
@@ -148,22 +171,22 @@ GoogleMaps.load();
 });
 
 Template.body.helpers({
-exampleMapOptions: function() {
-  // Make sure the maps API has loaded
-  if (GoogleMaps.loaded()) {
-    // Map initialization options
-    return {
-      center: new google.maps.LatLng(-37.8136, 144.9631),
-      zoom: 1
-    };
-  }
-}
+    exampleMapOptions: function() {
+      // Make sure the maps API has loaded
+      if (GoogleMaps.loaded()) {
+        // Map initialization options
+        return {
+          center: new google.maps.LatLng(37.6, -122.39),
+          zoom: 10
+        };
+      }
+    }
 });
 
 Template.body.created = function() {
 // We can use the `ready` callback to interact with the map API once the map is ready.
 GoogleMaps.ready('exampleMap', function(map) {
     globalMap = map;
-    Session.set('coordNum', 0);
+    Session.set('liveview', true);
 });
 };

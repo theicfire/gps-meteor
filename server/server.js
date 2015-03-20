@@ -6,6 +6,7 @@ Meteor.startup(function () {
 });
 
 Meteor.publish('coords', function(num) {
+    Counts.publish(this, 'countCoords', Coords.find(), { noReady: true });
     return Coords.find({}, {'sort': ['createdAt'], skip: num, limit: 1});
 });
 
