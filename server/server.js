@@ -35,10 +35,16 @@ Router.route('/add_coords/:lat/:long/:time', {where: 'server'})
 
 Router.route('/add_arduino/:lat/:long/:time/:type', {where: 'server'})
   .post(function () {
+      var year = this.params.time.substr(0, 4);
+      var month = this.params.time.substr(4, 2);
+      var day = this.params.time.substr(6, 2);
+      var hour = this.params.time.substr(8, 2);
+      var min = this.params.time.substr(10, 2);
+      var sec = this.params.time.substr(12, 2);
       var coord = {
           lat: this.params.lat,
           long: this.params.long,
-          createdAt: new Date(parseInt(this.params.time)),
+          createdAt: new Date(year, month, day, hour, min, sec),
           type: this.params.type,
           from_arduino: true
       };
