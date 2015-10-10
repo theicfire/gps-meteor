@@ -41,7 +41,7 @@ Template.Map.events({
         Session.set('liveview', true);
     }
 });
-Template.Adamap.events({
+Template.ArduinoListing.events({
     'click .reset': function(event) {
       event.preventDefault();
       Meteor.call('removeAll');
@@ -72,9 +72,9 @@ Template.Map.created = function() {
     });
 };
 
-Template.Adamap.created = function() {
+Template.ArduinoListing.created = function() {
     this.autorun(function() {
-        Meteor.subscribe('ada_coords');
+        Meteor.subscribe('arduino_coords');
     });
 };
 
@@ -93,7 +93,7 @@ Template.Map.helpers({
     }
 });
 
-Template.Adamap.helpers({
+Template.ArduinoListing.helpers({
     coords: function() {
       return Coords.find({from_arduino: true});
     }
@@ -108,7 +108,7 @@ Router.route('/', function () {
 
 Router.route('/cool', function () {
   // render the Home template with a custom data context
-  this.render('Adamap');
+  this.render('ArduinoListing');
 });
 
 

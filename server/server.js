@@ -10,7 +10,7 @@ Meteor.publish('coords', function(num) {
     return Coords.find({}, {'sort': ['createdAt'], skip: num, limit: 1});
 });
 
-Meteor.publish('ada_coords', function() {
+Meteor.publish('arduino_coords', function() {
     // TODO change
     return Coords.find({from_arduino: true}, {'sort': ['createdAt'], limit: 200});
 });
@@ -33,7 +33,7 @@ Router.route('/add_coords/:lat/:long/:time', {where: 'server'})
       this.response.end('Received loc of ' + JSON.stringify(coord) + '\n');
   });
 
-Router.route('/add_ada/:lat/:long/:time/:type', {where: 'server'})
+Router.route('/add_arduino/:lat/:long/:time/:type', {where: 'server'})
   .post(function () {
       var coord = {
           lat: this.params.lat,
