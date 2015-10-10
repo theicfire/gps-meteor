@@ -10,6 +10,17 @@ Meteor.publish('coords', function(num) {
     return Coords.find({}, {'sort': ['createdAt'], skip: num, limit: 1});
 });
 
+Meteor.publish('ada_coords', function() {
+    // TODO change
+    return Coords.find({from_arduino: true}, {'sort': ['createdAt'], limit: 200});
+});
+
+Meteor.methods({
+    removeAll: function() {
+      Coords.remove({from_arduino: true});
+    }
+});
+
 // IronRouter
 Router.route('/add_coords/:lat/:long/:time', {where: 'server'})
   .post(function () {
@@ -17,6 +28,19 @@ Router.route('/add_coords/:lat/:long/:time', {where: 'server'})
           lat: this.params.lat,
           long: this.params.long,
           createdAt: new Date(parseInt(this.params.time))
+      };
+      Coords.insert(coord);
+      this.response.end('Received loc of ' + JSON.stringify(coord) + '\n');
+  });
+
+Router.route('/add_ada/:lat/:long/:time/:type', {where: 'server'})
+  .post(function () {
+      var coord = {
+          lat: this.params.lat,
+          long: this.params.long,
+          createdAt: new Date(parseInt(this.params.time)),
+          type: this.params.type,
+          from_arduino: true
       };
       Coords.insert(coord);
       this.response.end('Received loc of ' + JSON.stringify(coord) + '\n');

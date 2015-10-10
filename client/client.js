@@ -41,6 +41,12 @@ Template.Map.events({
         Session.set('liveview', true);
     }
 });
+Template.Adamap.events({
+    'click .reset': function(event) {
+      event.preventDefault();
+      Meteor.call('removeAll');
+    }
+});
 
 
 Template.Map.created = function() {
@@ -66,6 +72,12 @@ Template.Map.created = function() {
     });
 };
 
+Template.Adamap.created = function() {
+    this.autorun(function() {
+        Meteor.subscribe('ada_coords');
+    });
+};
+
 Template.Map.helpers({
     coords: function() {
         return Coords.find();
@@ -81,11 +93,22 @@ Template.Map.helpers({
     }
 });
 
+Template.Adamap.helpers({
+    coords: function() {
+      return Coords.find({from_arduino: true});
+    }
+});
+
 
 
 Router.route('/', function () {
   // render the Home template with a custom data context
   this.render('Map');
+});
+
+Router.route('/cool', function () {
+  // render the Home template with a custom data context
+  this.render('Adamap');
 });
 
 

@@ -1,7 +1,6 @@
 <head>
     <title>GPS Stuff</title>
 </head>
-
 <body>
   <div class="map-container">
     {{> googleMap name="exampleMap" options=exampleMapOptions}}
@@ -20,12 +19,4 @@
     <button class="liveCoord" style="{{#if liveview}}background-color:green{{/if}}">Live</button>
 </div>
 </div>
-
-<!--{{#each coords}}-->
-<!--{{>SingleCoord}}-->
-<!--{{/each}}-->
-</template>
-
-<template name="SingleCoord">
-<div>lat: {{lat}} long: {{long}} createdAt: {{createdAt}}</div>
 </template>
