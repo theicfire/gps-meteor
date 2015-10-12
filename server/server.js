@@ -12,7 +12,7 @@ Meteor.publish('coords', function(num) {
 
 Meteor.publish('arduino_coords', function() {
     // TODO change
-    return Coords.find({from_arduino: true}, {'sort': ['createdAt'], limit: 200});
+    return Coords.find({from_arduino: true}, {'sort': {'createdAt': -1}, limit: 10});
 });
 
 Meteor.methods({
