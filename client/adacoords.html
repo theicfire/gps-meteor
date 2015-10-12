@@ -1,0 +1,12 @@
+<template name="ArduinoListing">
+  <button class="reset">Delete all points</button>
+Coords:
+{{#each coords}}
+{{>SingleCoord}}
+{{/each}}
+
+</template>
+
+<template name="SingleCoord">
+  <div>({{lat}}, {{long}}) createdAt: {{createdAt}} type: {{type}}</div>
+</template>

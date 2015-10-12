@@ -42,11 +42,11 @@ Router.route('/add_arduino/:lat/:long/:time/:type', {where: 'server'})
       var min = this.params.time.substr(10, 2);
       var sec = this.params.time.substr(12, 2);
       var coord = {
-          lat: this.params.lat,
-          long: this.params.long,
-          createdAt: new Date(year, month, day, hour, min, sec),
-          type: this.params.type,
-          from_arduino: true
+        lat: parseInt(this.params.lat) / 100000.0,
+        long: parseInt(this.params.long) / 100000.0,
+        createdAt: new Date(year, month, day, hour, min, sec),
+        type: this.params.type,
+        from_arduino: true
       };
       Coords.insert(coord);
       this.response.end('Received loc of ' + JSON.stringify(coord) + '\n');
