@@ -33,14 +33,8 @@ Router.route('/add_coords/:lat/:long/:time', {where: 'server'})
       this.response.end('Received loc of ' + JSON.stringify(coord) + '\n');
   });
 
-Router.route('/add_arduino/:lat/:long/:time/:type', {where: 'server'})
+Router.route('/add_arduino/:lat/:long/:type', {where: 'server'})
   .post(function () {
-      var year = this.params.time.substr(0, 4);
-      var month = this.params.time.substr(4, 2);
-      var day = this.params.time.substr(6, 2);
-      var hour = this.params.time.substr(8, 2);
-      var min = this.params.time.substr(10, 2);
-      var sec = this.params.time.substr(12, 2);
       var coord = {
         lat: parseInt(this.params.lat) / 100000.0,
         long: parseInt(this.params.long) / 100000.0,
