@@ -44,7 +44,7 @@ Router.route('/add_arduino/:lat/:long/:time/:type', {where: 'server'})
       var coord = {
         lat: parseInt(this.params.lat) / 100000.0,
         long: parseInt(this.params.long) / 100000.0,
-        createdAt: new Date(year, month, day, hour, min, sec),
+        createdAt: new Date(),
         type: this.params.type,
         from_arduino: true
       };
