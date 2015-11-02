@@ -3,6 +3,7 @@ var client = Twilio('ACa8b26113996868bf72b7fab2a8ea0361', '47d7dc0b6dc56c2161dc4
 var last_ping;
 var CHASE_PHONE = '+15125778778';
 var MICRO_PHONE = '+15125778778';
+var WATCHDOG_TIMEOUT = 200000;
 
 Meteor.startup(function () {
     console.log('start up');
@@ -106,7 +107,7 @@ Meteor.setInterval(function() {
     if (!pingState || !pingState.val) {
       return;
     }
-    if (last_ping + 4000 < (new Date()).getTime()) {
+    if (last_ping + WATCHDOG_TIMEOUT < (new Date()).getTime()) {
       sendSMS(CHASE_PHONE, 'Watchdog expired');
       StateMap.update(pingState._id, {$set: {val: false}});
     } else {
