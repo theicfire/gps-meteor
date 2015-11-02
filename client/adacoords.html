@@ -1,6 +1,7 @@
 <template name="ArduinoListing">
+{{>Buttons}}
   <button class="reset">Delete all points</button>
-Coords:
+  <div>Coords:</div>
 {{#each coords}}
 {{>SingleCoord}}
 {{/each}}
@@ -9,4 +10,17 @@ Coords:
 
 <template name="SingleCoord">
   <div>({{lat}}, {{long}}) createdAt: {{createdAt}} type: {{type}}</div>
+</template>
+
+<template name="Buttons">
+  <div>
+    SMS:
+  <button class="sms-button">gps</button>
+  <button class="sms-button">alarm-reset</button>
+  <button class="sms-button">lock</button>
+  <button class="sms-button">unlock</button>
+  <button class="sms-button">bat</button>
+  <button class="sms-button">threshold100</button>
+  <button class="sms-button">threshold300</button>
+  </div>
 </template>

@@ -48,6 +48,13 @@ Template.ArduinoListing.events({
     }
 });
 
+Template.Buttons.events({
+    'click .sms-button': function(event) {
+      console.log('send', event.target.innerHTML);
+      Meteor.call('sendSMS', event.target.innerHTML);
+    }
+});
+
 
 Template.Map.created = function() {
     this.autorun(function() {

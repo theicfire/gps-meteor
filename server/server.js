@@ -1,3 +1,6 @@
+var Twilio = Meteor.npmRequire('twilio');
+var client = Twilio('ACa8b26113996868bf72b7fab2a8ea0361', '47d7dc0b6dc56c2161dc44bc0324bb70');
+
 Meteor.startup(function () {
     console.log('start up');
     if (Coords.find().count() === 0) {
@@ -18,6 +21,16 @@ Meteor.publish('arduino_coords', function() {
 Meteor.methods({
     removeAll: function() {
       Coords.remove({from_arduino: true});
+    },
+    sendSMS: function(msg) {
+      client.sendMessage({
+        to:'+15125778778',
+        from: '+15128722240',
+        body: msg
+      }, function (err, res) {
+        console.log('err', err);
+        console.log('res', res);
+      });
     }
 });
 
@@ -45,3 +58,31 @@ Router.route('/add_arduino/:lat/:long/:type', {where: 'server'})
       Coords.insert(coord);
       this.response.end('Received loc of ' + JSON.stringify(coord) + '\n');
   });
+
+Router.route('/sms', {where: 'server'})
+  .post(function () {
+      console.log(this.request.body);
+      this.response.end('<Response></Response>');
+  });
+
+/* Twilio message:
+I20151102-09:40:01.401(-8)? { ToCountry: 'US',
+I20151102-09:40:01.401(-8)?   ToState: 'TX',
+I20151102-09:40:01.401(-8)?   SmsMessageSid: 'SM18e8600674582091d288cafb1f5e5f7d',
+I20151102-09:40:01.401(-8)?   NumMedia: '0',
+I20151102-09:40:01.401(-8)?   ToCity: 'Austin',
+I20151102-09:40:01.401(-8)?   FromZip: '78705',
+I20151102-09:40:01.401(-8)?   SmsSid: 'SM18e8600674582091d288cafb1f5e5f7d',
+I20151102-09:40:01.401(-8)?   FromState: 'TX',
+I20151102-09:40:01.401(-8)?   SmsStatus: 'received',
+I20151102-09:40:01.401(-8)?   FromCity: 'AUSTIN',
+I20151102-09:40:01.401(-8)?   Body: 'Hi twillio',
+I20151102-09:40:01.401(-8)?   FromCountry: 'US',
+I20151102-09:40:01.402(-8)?   To: '+15128722240',
+I20151102-09:40:01.402(-8)?   ToZip: '',
+I20151102-09:40:01.402(-8)?   NumSegments: '1',
+I20151102-09:40:01.402(-8)?   MessageSid: 'SM18e8600674582091d288cafb1f5e5f7d',
+I20151102-09:40:01.402(-8)?   AccountSid: 'ACa8b26113996868bf72b7fab2a8ea0361',
+I20151102-09:40:01.402(-8)?   From: '+15125778778',
+I20151102-09:40:01.402(-8)?   ApiVersion: '2010-04-01' }
+*/
