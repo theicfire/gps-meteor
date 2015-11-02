@@ -2,7 +2,7 @@ var Twilio = Meteor.npmRequire('twilio');
 var client = Twilio('ACa8b26113996868bf72b7fab2a8ea0361', '47d7dc0b6dc56c2161dc44bc0324bb70');
 var last_ping;
 var CHASE_PHONE = '+15125778778';
-var MICRO_PHONE = '+15125778778';
+var MICRO_PHONE = '+16502356065';
 var WATCHDOG_TIMEOUT = 200000;
 
 Meteor.startup(function () {
