@@ -107,6 +107,10 @@ Template.State.helpers({
     var pingState = StateMap.findOne({key: 'pingState'});
     return pingState && pingState.val ? 'Turn Watchdog Off' : 'Turn Watchdog On';
   },
+  lastSMS: function() {
+    var lastSMS = StateMap.findOne({key: 'lastSMS'});
+    return lastSMS ? lastSMS.val : 'None';
+  }
 });
 
 Template.State.events({

@@ -98,6 +98,7 @@ Router.route('/sms', {where: 'server'})
         console.log('insert', coord);
         Coords.insert(coord);
       }
+      StateMap.upsert({key: 'lastSMS'}, {$set: {val: msg}});
       last_ping = (new Date()).getTime();
       this.response.end('<Response></Response>');
   });
