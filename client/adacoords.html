@@ -1,5 +1,6 @@
 <template name="ArduinoListing">
 {{>Buttons}}
+{{>State}}
   <button class="reset">Delete all points</button>
   <div>Coords:</div>
 {{#each coords}}
@@ -22,5 +23,11 @@
   <button class="sms-button">bat</button>
   <button class="sms-button">threshold100</button>
   <button class="sms-button">threshold300</button>
+  </div>
+</template>
+
+<template name="State">
+  <div>
+    Ping: <button class='pingState'>{{pingButton}}</button>
   </div>
 </template>

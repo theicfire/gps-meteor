@@ -3,7 +3,6 @@ var globalMap;
 var KEYS = {DOWN: 40, UP: 38};
 var centeredOnce;
 
-
 var previousCoord = function(event) {
     event.preventDefault();
     Session.set('liveview', false);
@@ -79,11 +78,8 @@ Template.Map.created = function() {
     });
 };
 
-Template.ArduinoListing.created = function() {
-    this.autorun(function() {
-        Meteor.subscribe('arduino_coords');
-    });
-};
+Meteor.subscribe('arduino_coords');
+Meteor.subscribe('state');
 
 Template.Map.helpers({
     coords: function() {
@@ -104,6 +100,25 @@ Template.ArduinoListing.helpers({
     coords: function() {
       return Coords.find({from_arduino: true});
     }
+});
+
+Template.State.helpers({
+  pingButton: function() {
+    var pingState = StateMap.findOne({key: 'pingState'});
+    return pingState && pingState.val ? 'Turn Ping Off' : 'Turn Ping On';
+  },
+});
+
+Template.State.events({
+    'click .pingState': function(event) {
+      var pingState = StateMap.findOne({key: 'pingState'});
+      console.log('invert pingState', pingState);
+      if (pingState) {
+        StateMap.update(pingState._id, {$set: {val: !pingState.val}});
+      } else {
+        StateMap.insert({key: 'pingState', val: true});
+      }
+    },
 });
 
 

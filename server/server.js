@@ -1,11 +1,22 @@
 var Twilio = Meteor.npmRequire('twilio');
 var client = Twilio('ACa8b26113996868bf72b7fab2a8ea0361', '47d7dc0b6dc56c2161dc44bc0324bb70');
+var last_ping;
 
 Meteor.startup(function () {
     console.log('start up');
     if (Coords.find().count() === 0) {
         Coords.insert({lat: 37.446013, long: -122.125731, createdAt: (new Date()).getTime()})
     }
+    StateMap.find({key: 'pingState'}).observeChanges({
+      added: function() {
+        console.log('pingState added');
+        last_ping = (new Date()).getTime();
+      },
+      changed: function() {
+        console.log('pingState updated');
+        last_ping = (new Date()).getTime();
+      },
+    });
 });
 
 Meteor.publish('coords', function(num) {
@@ -16,6 +27,10 @@ Meteor.publish('coords', function(num) {
 Meteor.publish('arduino_coords', function() {
     // TODO change
     return Coords.find({from_arduino: true}, {'sort': {'createdAt': -1}, limit: 10});
+});
+
+Meteor.publish('state', function() {
+  return StateMap.find({});
 });
 
 Meteor.methods({
@@ -33,6 +48,7 @@ Meteor.methods({
       });
     }
 });
+
 
 // IronRouter
 Router.route('/add_coords/:lat/:long/:time', {where: 'server'})
@@ -62,8 +78,22 @@ Router.route('/add_arduino/:lat/:long/:type', {where: 'server'})
 Router.route('/sms', {where: 'server'})
   .post(function () {
       console.log(this.request.body);
+      last_ping = (new Date()).getTime();
       this.response.end('<Response></Response>');
   });
+
+Meteor.setInterval(function() {
+    var pingState = StateMap.findOne({key: 'pingState'});
+    if (!pingState || !pingState.val) {
+      return;
+    }
+    if (last_ping + 4000 < (new Date()).getTime()) {
+      console.log('not pinged!', pingState);
+      StateMap.update(pingState._id, {$set: {val: false}});
+    } else {
+      console.log('interval', (new Date()).getTime() - last_ping);
+    }
+}, 2000);
 
 /* Twilio message:
 I20151102-09:40:01.401(-8)? { ToCountry: 'US',
