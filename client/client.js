@@ -105,7 +105,7 @@ Template.ArduinoListing.helpers({
 Template.State.helpers({
   pingButton: function() {
     var pingState = StateMap.findOne({key: 'pingState'});
-    return pingState && pingState.val ? 'Turn Ping Off' : 'Turn Ping On';
+    return pingState && pingState.val ? 'Turn Watchdog Off' : 'Turn Watchdog On';
   },
 });
 
