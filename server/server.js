@@ -77,7 +77,20 @@ Router.route('/add_arduino/:lat/:long/:type', {where: 'server'})
 
 Router.route('/sms', {where: 'server'})
   .post(function () {
-      console.log(this.request.body);
+      var msg = this.request.body.Body;
+      console.log(msg);
+      if (msg.startsWith('gps:')) {
+        parts = msg.split(':');
+        var coord = {
+          lat: parseInt(parts[1]) / 100000.0,
+          long: parseInt(parts[2]) / 100000.0,
+          createdAt: new Date(),
+          type: 'gps',
+          from_arduino: true
+        };
+        console.log('insert', coord);
+        Coords.insert(coord);
+      }
       last_ping = (new Date()).getTime();
       this.response.end('<Response></Response>');
   });
