@@ -4,7 +4,7 @@ var last_ping;
 var CHASE_PHONE = '+15125778778';
 //var MICRO_PHONE = '+16502356065';
 var MICRO_PHONE = '+16507720745';
-var WATCHDOG_TIMEOUT = 200000;
+var WATCHDOG_TIMEOUT = 250000;
 
 Meteor.startup(function () {
     console.log('start up');
@@ -93,8 +93,8 @@ Router.route('/add_coords/:lat/:long/:time', {where: 'server'})
 Router.route('/add_arduino/:lat/:long/:type', {where: 'server'})
   .post(function () {
       var coord = {
-        lat: parseInt(this.params.lat) / 100000.0,
-        long: parseInt(this.params.long) / 100000.0,
+        lat: parseInt(this.params.lat) / 10000.0,
+        long: parseInt(this.params.long) / 10000.0,
         createdAt: new Date(),
         type: this.params.type,
         from_arduino: true
@@ -149,3 +149,27 @@ Meteor.setInterval(function() {
       console.log('interval', (new Date()).getTime() - last_ping);
     }
 }, 2000);
+
+//var sendMessage = Meteor.wrapAsync(client.sendMessage);
+
+//var poll = function(sid) {
+  //console.log('poll', sid);
+    //client.getSms(sid, function(err, res) {
+        //console.log('got response');
+      //console.log(res);
+      //setTimeout(function () {poll(sid)}, 1000);
+    //});
+//}
+
+Meteor.setTimeout(function() {
+      var send = 'some' + ((new Date()).getTime() % 1000 + 'thing');
+      console.log('Sending', send);
+
+      var res = sendMessage({
+        to: '+15125778778',
+        from: '+15128722240',
+        body: send
+      });
+      console.log('res', Object.keys(res));
+      poll(res.sid);
+}, 1000);
