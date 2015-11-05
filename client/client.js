@@ -117,6 +117,10 @@ Template.State.helpers({
   lastSMS: function() {
     var lastSMS = StateMap.findOne({key: 'lastSMS'});
     return lastSMS ? lastSMS.val : 'None';
+  },
+  ringStatus: function() {
+    var ringStatus = StateMap.findOne({key: 'ringStatus'});
+    return ringStatus ? ringStatus.val : 'None';
   }
 });
 

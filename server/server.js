@@ -53,8 +53,11 @@ var sendRing = function(to_number, from_number) {
     client.calls.create({
       to: to_number,
       from: from_number,
-      url: "http://cc0783e3.ngrok.io",
+      url: "http://chasegps.meteor.com",
       timeout: 1,
+      statusCallback: "http://chasegps.meteor.com/call_completed",
+      statusCallbackMethod: "POST",
+      statusCallbackEvent: ["completed"],
     }, function (err, res) {
       console.log('err', err);
       console.log('res', res);
@@ -69,6 +72,7 @@ Meteor.methods({
       sendSMS(MICRO_PHONE, msg);
     },
     sendRing: function (from_number) {
+      StateMap.upsert({key: 'ringStatus'}, {$set: {val: 'ringing'}});
       sendRing(MICRO_PHONE, from_number);
     },
 });
@@ -118,6 +122,19 @@ Router.route('/sms', {where: 'server'})
       StateMap.upsert({key: 'lastSMS'}, {$set: {val: msg}});
       last_ping = (new Date()).getTime();
       this.response.end('<Response></Response>');
+  });
+
+Router.route('/call', {where: 'server'})
+  .post(function () {
+      console.log('hit call');
+      this.response.end('<Response></Response>');
+  });
+
+Router.route('/call_completed', {where: 'server'})
+  .post(function () {
+      console.log('call completed');
+      StateMap.upsert({key: 'ringStatus'}, {$set: {val: 'completed'}});
+      this.response.end();
   });
 
 Meteor.setInterval(function() {
