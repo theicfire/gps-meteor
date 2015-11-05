@@ -149,27 +149,3 @@ Meteor.setInterval(function() {
       console.log('interval', (new Date()).getTime() - last_ping);
     }
 }, 2000);
-
-//var sendMessage = Meteor.wrapAsync(client.sendMessage);
-
-//var poll = function(sid) {
-  //console.log('poll', sid);
-    //client.getSms(sid, function(err, res) {
-        //console.log('got response');
-      //console.log(res);
-      //setTimeout(function () {poll(sid)}, 1000);
-    //});
-//}
-
-//Meteor.setTimeout(function() {
-      //var send = 'some' + ((new Date()).getTime() % 1000 + 'thing');
-      //console.log('Sending', send);
-
-      //var res = sendMessage({
-        //to: '+15125778778',
-        //from: '+15128722240',
-        //body: send
-      //});
-      //console.log('res', Object.keys(res));
-      //poll(res.sid);
-//}, 1000);
