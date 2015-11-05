@@ -161,15 +161,15 @@ Meteor.setInterval(function() {
     //});
 //}
 
-Meteor.setTimeout(function() {
-      var send = 'some' + ((new Date()).getTime() % 1000 + 'thing');
-      console.log('Sending', send);
+//Meteor.setTimeout(function() {
+      //var send = 'some' + ((new Date()).getTime() % 1000 + 'thing');
+      //console.log('Sending', send);
 
-      var res = sendMessage({
-        to: '+15125778778',
-        from: '+15128722240',
-        body: send
-      });
-      console.log('res', Object.keys(res));
-      poll(res.sid);
-}, 1000);
+      //var res = sendMessage({
+        //to: '+15125778778',
+        //from: '+15128722240',
+        //body: send
+      //});
+      //console.log('res', Object.keys(res));
+      //poll(res.sid);
+//}, 1000);
