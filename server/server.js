@@ -110,8 +110,8 @@ Router.route('/sms', {where: 'server'})
       if (msg.startsWith('gps:')) {
         parts = msg.split(':');
         var coord = {
-          lat: parseInt(parts[1]) / 100000.0,
-          long: parseInt(parts[2]) / 100000.0,
+          lat: parseInt(parts[1]) / 10000.0,
+          long: parseInt(parts[2]) / 10000.0,
           createdAt: new Date(),
           type: 'gps',
           from_arduino: true
