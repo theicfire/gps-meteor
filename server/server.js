@@ -53,9 +53,9 @@ var sendRing = function(to_number, from_number) {
     client.calls.create({
       to: to_number,
       from: from_number,
-      url: "http://chasegps.meteor.com",
+      url: "http://gps.chaselambda.com",
       timeout: 1,
-      statusCallback: "http://chasegps.meteor.com/call_completed",
+      statusCallback: "http://gps.chaselambda.com/call_completed",
       statusCallbackMethod: "POST",
       statusCallbackEvent: ["completed"],
     }, function (err, res) {
