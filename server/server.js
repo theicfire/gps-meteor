@@ -121,12 +121,16 @@ Router.route('/sms', {where: 'server'})
       }
       StateMap.upsert({key: 'lastSMS'}, {$set: {val: msg}});
       last_ping = (new Date()).getTime();
+      var headers = {'Content-type': 'text/xml'};
+      this.response.writeHead(200, headers);
       this.response.end('<Response></Response>');
   });
 
 Router.route('/call', {where: 'server'})
   .post(function () {
       console.log('hit call');
+      var headers = {'Content-type': 'text/xml'};
+      this.response.writeHead(200, headers);
       this.response.end('<Response></Response>');
   });
 
@@ -134,6 +138,8 @@ Router.route('/call_completed', {where: 'server'})
   .post(function () {
       console.log('call completed');
       StateMap.upsert({key: 'ringStatus'}, {$set: {val: 'completed'}});
+      var headers = {'Content-type': 'text/xml'};
+      this.response.writeHead(200, headers);
       this.response.end();
   });
 
