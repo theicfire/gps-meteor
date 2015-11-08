@@ -157,6 +157,7 @@ Meteor.setInterval(function() {
       return;
     }
     if (last_ping + WATCHDOG_TIMEOUT < (new Date()).getTime()) {
+      console.log('watchdog too old', last_ping, (new Date()).getTime());
       sendSMS(CHASE_PHONE, 'Watchdog expired');
       StateMap.update(locked._id, {$set: {val: false}});
     } else {
