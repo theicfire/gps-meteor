@@ -11,13 +11,13 @@ Meteor.startup(function () {
     if (Coords.find().count() === 0) {
         Coords.insert({lat: 37.446013, long: -122.125731, createdAt: (new Date()).getTime()})
     }
-    StateMap.find({key: 'watchdog'}).observeChanges({
+    StateMap.find({key: 'locked'}).observeChanges({
       added: function() {
-        console.log('watchdog added');
+        console.log('locked added');
         last_ping = (new Date()).getTime();
       },
       changed: function() {
-        console.log('watchdog updated');
+        console.log('locked updated');
         last_ping = (new Date()).getTime();
       },
     });
@@ -119,9 +119,12 @@ Router.route('/sms', {where: 'server'})
         console.log('insert', coord);
         Coords.insert(coord);
       } else if (msg.trim() === "Locked") {
-        StateMap.upsert({key: 'watchdog'}, {$set: {val: true}});
+        StateMap.upsert({key: 'locked'}, {$set: {val: true}});
       } else if (msg.trim() === "Unlocked") {
-        StateMap.upsert({key: 'watchdog'}, {$set: {val: false}});
+        StateMap.upsert({key: 'locked'}, {$set: {val: false}});
+      } else if (msg.trim() === "second_move") {
+        StateMap.upsert({key: 'locked'}, {$set: {val: false}});
+        sendSMS(CHASE_PHONE, 'Second Move!');
       }
       StateMap.upsert({key: 'lastSMS'}, {$set: {val: msg}});
       last_ping = (new Date()).getTime();
@@ -148,13 +151,13 @@ Router.route('/call_completed', {where: 'server'})
   });
 
 Meteor.setInterval(function() {
-    var watchdog = StateMap.findOne({key: 'watchdog'});
-    if (!watchdog || !watchdog.val) {
+    var locked = StateMap.findOne({key: 'locked'});
+    if (!locked || !locked.val) {
       return;
     }
     if (last_ping + WATCHDOG_TIMEOUT < (new Date()).getTime()) {
       sendSMS(CHASE_PHONE, 'Watchdog expired');
-      StateMap.update(watchdog._id, {$set: {val: false}});
+      StateMap.update(locked._id, {$set: {val: false}});
     } else {
       console.log('interval', (new Date()).getTime() - last_ping);
     }

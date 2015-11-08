@@ -110,9 +110,9 @@ Template.ArduinoListing.helpers({
 });
 
 Template.State.helpers({
-  watchdog: function() {
-    var watchdog = StateMap.findOne({key: 'watchdog'});
-    return watchdog && watchdog.val ? 'ON' : 'OFF';
+  lock: function() {
+    var locked = StateMap.findOne({key: 'locked'});
+    return locked && locked.val ? 'ON' : 'OFF';
   },
   lastSMS: function() {
     var lastSMS = StateMap.findOne({key: 'lastSMS'});
