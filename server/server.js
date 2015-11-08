@@ -128,6 +128,7 @@ Router.route('/sms', {where: 'server'})
       }
       StateMap.upsert({key: 'lastSMS'}, {$set: {val: msg}});
       last_ping = (new Date()).getTime();
+      console.log('update last_ping', last_ping);
       var headers = {'Content-type': 'text/xml'};
       this.response.writeHead(200, headers);
       this.response.end('<Response></Response>');
