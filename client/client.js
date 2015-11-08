@@ -110,9 +110,9 @@ Template.ArduinoListing.helpers({
 });
 
 Template.State.helpers({
-  pingButton: function() {
-    var pingState = StateMap.findOne({key: 'pingState'});
-    return pingState && pingState.val ? 'Turn Watchdog Off' : 'Turn Watchdog On';
+  watchdog: function() {
+    var watchdog = StateMap.findOne({key: 'watchdog'});
+    return watchdog && watchdog.val ? 'ON' : 'OFF';
   },
   lastSMS: function() {
     var lastSMS = StateMap.findOne({key: 'lastSMS'});
@@ -123,20 +123,6 @@ Template.State.helpers({
     return ringStatus ? ringStatus.val : 'None';
   }
 });
-
-Template.State.events({
-    'click .pingState': function(event) {
-      var pingState = StateMap.findOne({key: 'pingState'});
-      console.log('invert pingState', pingState);
-      if (pingState) {
-        StateMap.update(pingState._id, {$set: {val: !pingState.val}});
-      } else {
-        StateMap.insert({key: 'pingState', val: true});
-      }
-    },
-});
-
-
 
 Router.route('/', function () {
   // render the Home template with a custom data context

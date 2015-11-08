@@ -11,13 +11,13 @@ Meteor.startup(function () {
     if (Coords.find().count() === 0) {
         Coords.insert({lat: 37.446013, long: -122.125731, createdAt: (new Date()).getTime()})
     }
-    StateMap.find({key: 'pingState'}).observeChanges({
+    StateMap.find({key: 'watchdog'}).observeChanges({
       added: function() {
-        console.log('pingState added');
+        console.log('watchdog added');
         last_ping = (new Date()).getTime();
       },
       changed: function() {
-        console.log('pingState updated');
+        console.log('watchdog updated');
         last_ping = (new Date()).getTime();
       },
     });
@@ -118,6 +118,10 @@ Router.route('/sms', {where: 'server'})
         };
         console.log('insert', coord);
         Coords.insert(coord);
+      } else if (msg.trim() === "Locked") {
+        StateMap.upsert({key: 'watchdog'}, {$set: {val: true}});
+      } else if (msg.trim() === "Unlocked") {
+        StateMap.upsert({key: 'watchdog'}, {$set: {val: false}});
       }
       StateMap.upsert({key: 'lastSMS'}, {$set: {val: msg}});
       last_ping = (new Date()).getTime();
@@ -144,13 +148,13 @@ Router.route('/call_completed', {where: 'server'})
   });
 
 Meteor.setInterval(function() {
-    var pingState = StateMap.findOne({key: 'pingState'});
-    if (!pingState || !pingState.val) {
+    var watchdog = StateMap.findOne({key: 'watchdog'});
+    if (!watchdog || !watchdog.val) {
       return;
     }
     if (last_ping + WATCHDOG_TIMEOUT < (new Date()).getTime()) {
       sendSMS(CHASE_PHONE, 'Watchdog expired');
-      StateMap.update(pingState._id, {$set: {val: false}});
+      StateMap.update(watchdog._id, {$set: {val: false}});
     } else {
       console.log('interval', (new Date()).getTime() - last_ping);
     }
