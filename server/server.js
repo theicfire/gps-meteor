@@ -1,10 +1,11 @@
 var Twilio = Meteor.npmRequire('twilio');
+var PushBullet = Meteor.npmRequire('pushbullet');
 var client = Twilio('ACa8b26113996868bf72b7fab2a8ea0361', '47d7dc0b6dc56c2161dc44bc0324bb70');
 var last_ping;
-var CHASE_PHONE = '+15125778778';
 //var MICRO_PHONE = '+16502356065';
 var MICRO_PHONE = '+16507720745';
 var WATCHDOG_TIMEOUT = 250000;
+var pusher = new PushBullet('oYHlSULc3i998hvbuVtsjlH0ps23l7y2');
 
 Meteor.startup(function () {
     console.log('start up');
@@ -48,6 +49,26 @@ var sendSMS = function(number, msg) {
     });
 };
 
+
+var sendPushbullet = function(title, msg, phone_nickname, cb) {
+    pusher.devices(function(err, res) {
+        if (err) {
+            return;
+        }
+        var params = {};
+        if (phone_nickname && phone_nickname.length > 0) {
+            var bikeId;
+            for (var i = 0; i < res.devices.length; i++) {
+                if (res.devices[i].nickname == phone_nickname) {
+                    params = {device_iden: res.devices[i].iden};
+                    break;
+                }
+            }
+        }
+        pusher.note(params, title, msg, cb);
+    });
+};
+
 var sendRing = function(to_number, from_number) {
   console.log('send ring to', from_number);
     client.calls.create({
@@ -62,6 +83,12 @@ var sendRing = function(to_number, from_number) {
       console.log('err', err);
       console.log('res', res);
     });
+};
+
+var sendAlert = function(msg) {
+  var CHASE_PHONE = '+15125778778';
+  sendPushbullet(msg, '', 'nexus4chase');
+  sendSMS(CHASE_PHONE, msg);
 };
 
 Meteor.methods({
@@ -124,7 +151,7 @@ Router.route('/sms', {where: 'server'})
         StateMap.upsert({key: 'locked'}, {$set: {val: false}});
       } else if (msg.trim() === "second_move") {
         StateMap.upsert({key: 'locked'}, {$set: {val: false}});
-        sendSMS(CHASE_PHONE, 'Second Move!');
+        sendAlert('Second move!');
       }
       StateMap.upsert({key: 'lastSMS'}, {$set: {val: msg}});
       last_ping = (new Date()).getTime();
@@ -158,7 +185,7 @@ Meteor.setInterval(function() {
     }
     if (last_ping + WATCHDOG_TIMEOUT < (new Date()).getTime()) {
       console.log('watchdog too old', last_ping, (new Date()).getTime());
-      sendSMS(CHASE_PHONE, 'Watchdog expired');
+      sendAlert('Watchdog expired!');
       StateMap.update(locked._id, {$set: {val: false}});
     } else {
       console.log('interval', (new Date()).getTime() - last_ping);
