@@ -1,0 +1,29 @@
+{
+  "servers": [
+    {
+      "host": "162.243.196.153",
+      "username": "root",
+      "pem": "~/.ssh/id_rsa"
+    }
+  ],
+
+  "setupMongo": true,
+
+  "setupNode": true,
+
+  "nodeVersion": "0.10.36",
+
+  "setupPhantom": true,
+
+  "enableUploadProgressBar": true,
+
+  "appName": "gps",
+
+  "app": "/Users/chase/trash/gps-meteor",
+
+  "env": {
+    "ROOT_URL": "http://gps.chaselambda.com"
+  },
+
+  "deployCheckWaitTime": 15
+}
