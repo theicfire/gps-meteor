@@ -142,6 +142,8 @@ Router.route('/sms', {where: 'server'})
         };
         console.log('insert', coord);
         Coords.insert(coord);
+      } else if (msg.startsWith('srt:')) {
+        StateMap.upsert({key: 'locked'}, {$set: {val: false}});
       } else if (msg.trim() === "Locked") {
         StateMap.upsert({key: 'locked'}, {$set: {val: true}});
       } else if (msg.trim() === "Unlocked") {
