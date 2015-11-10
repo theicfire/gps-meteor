@@ -1,4 +1,5 @@
 var Twilio = Meteor.npmRequire('twilio');
+var net = Meteor.npmRequire('net');
 var PushBullet = Meteor.npmRequire('pushbullet');
 var client = Twilio('ACa8b26113996868bf72b7fab2a8ea0361', '47d7dc0b6dc56c2161dc44bc0324bb70');
 var last_ping;
@@ -127,34 +128,38 @@ Router.route('/add_arduino/:lat/:long/:type', {where: 'server'})
       this.response.end('Received loc of ' + JSON.stringify(coord) + '\n');
   });
 
+var handle_micro_msg = function(msg) {
+  msg = msg.trim();
+  console.log('handling', msg);
+  if (msg.startsWith('gps:')) {
+    parts = msg.split(':');
+    var coord = {
+      lat: parseInt(parts[1]) / 10000.0,
+      long: parseInt(parts[2]) / 10000.0,
+      createdAt: new Date(),
+      type: 'gps',
+      from_arduino: true
+    };
+    console.log('insert', coord);
+    Coords.insert(coord);
+  } else if (msg.startsWith('srt:')) {
+    StateMap.upsert({key: 'locked'}, {$set: {val: false}});
+  } else if (msg === "Locked") {
+    StateMap.upsert({key: 'locked'}, {$set: {val: true}});
+  } else if (msg === "Unlocked") {
+    StateMap.upsert({key: 'locked'}, {$set: {val: false}});
+  } else if (msg === "second_move") {
+    StateMap.upsert({key: 'locked'}, {$set: {val: false}});
+    sendAlert('Second move!');
+  }
+  StateMap.upsert({key: 'lastSMS'}, {$set: {val: msg}});
+  last_ping = (new Date()).getTime();
+  console.log('update last_ping', last_ping);
+};
+
 Router.route('/sms', {where: 'server'})
   .post(function () {
-      var msg = this.request.body.Body;
-      console.log(msg);
-      if (msg.startsWith('gps:')) {
-        parts = msg.split(':');
-        var coord = {
-          lat: parseInt(parts[1]) / 10000.0,
-          long: parseInt(parts[2]) / 10000.0,
-          createdAt: new Date(),
-          type: 'gps',
-          from_arduino: true
-        };
-        console.log('insert', coord);
-        Coords.insert(coord);
-      } else if (msg.startsWith('srt:')) {
-        StateMap.upsert({key: 'locked'}, {$set: {val: false}});
-      } else if (msg.trim() === "Locked") {
-        StateMap.upsert({key: 'locked'}, {$set: {val: true}});
-      } else if (msg.trim() === "Unlocked") {
-        StateMap.upsert({key: 'locked'}, {$set: {val: false}});
-      } else if (msg.trim() === "second_move") {
-        StateMap.upsert({key: 'locked'}, {$set: {val: false}});
-        sendAlert('Second move!');
-      }
-      StateMap.upsert({key: 'lastSMS'}, {$set: {val: msg}});
-      last_ping = (new Date()).getTime();
-      console.log('update last_ping', last_ping);
+      handle_micro_msg(this.request.body.Body);
       var headers = {'Content-type': 'text/xml'};
       this.response.writeHead(200, headers);
       this.response.end('<Response></Response>');
@@ -190,3 +195,15 @@ Meteor.setInterval(function() {
       console.log('interval', (new Date()).getTime() - last_ping);
     }
 }, 2000);
+
+net.createServer( Meteor.bindEnvironment( function ( socket ) {
+  socket.on("error", function(err) {
+    console.log("Caught tcp error: ");
+    console.log(err.stack);
+    socket.destroy();
+  });
+
+  socket.addListener( "data", Meteor.bindEnvironment( function ( data ) {
+        handle_micro_msg(data.toString('ascii'));
+  }));
+})).listen( 5000 );
