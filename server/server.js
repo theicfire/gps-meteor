@@ -95,9 +95,6 @@ Meteor.methods({
     removeAll: function() {
       Coords.remove({from_arduino: true});
     },
-    sendSMS: function (msg) {
-      sendSMS(MICRO_PHONE, msg);
-    },
     sendRing: function (from_number) {
       StateMap.upsert({key: 'ringStatus'}, {$set: {val: 'ringing'}});
       sendRing(MICRO_PHONE, from_number);
