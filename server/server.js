@@ -144,7 +144,10 @@ var handle_micro_msg = function(msg) {
     console.log('insert', coord);
     Coords.insert(coord);
   } else if (msg.startsWith('srt:')) {
-    sendAlert('Arduino restarted in lock state!');
+    var locked = StateMap.findOne({key: 'locked'});
+    if (locked && locked.val) {
+      sendAlert('Arduino restarted in lock state!');
+    }
     StateMap.upsert({key: 'locked'}, {$set: {val: false}});
   } else if (msg === "Locked") {
     StateMap.upsert({key: 'locked'}, {$set: {val: true}});
