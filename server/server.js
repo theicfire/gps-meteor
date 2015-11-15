@@ -149,6 +149,16 @@ var handle_micro_msg = function(msg) {
       sendAlert('Arduino restarted in lock state!');
     }
     StateMap.upsert({key: 'locked'}, {$set: {val: false}});
+  } else if (msg.startsWith('bat:')) {
+    var parts = msg.split('bat:');
+    console.log(parts);
+    parts = parts[1].split('/');
+    console.log(parts);
+    var voltage = parseInt(parts[0]);
+    var percentage = parseInt(parts[1]);
+    if (voltage < 3510 && percentage <= 13) {
+      sendAlert('Error: undervoltage');
+    }
   } else if (msg === "Locked") {
     StateMap.upsert({key: 'locked'}, {$set: {val: true}});
   } else if (msg === "Unlocked") {
