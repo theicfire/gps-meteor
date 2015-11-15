@@ -90,7 +90,7 @@ var sendRing = function(to_number, from_number) {
 var sendAlert = function(msg) {
   var CHASE_PHONE = '+15125778778';
   sendPushbullet(msg, '', 'nexus4chase');
-  sendSMS(CHASE_PHONE, msg);
+  sendSMS(CHASE_PHONE, 'Alert: ' + msg);
 };
 
 Meteor.methods({
@@ -146,7 +146,7 @@ var handle_micro_msg = function(msg) {
   } else if (msg.startsWith('srt:')) {
     var locked = StateMap.findOne({key: 'locked'});
     if (locked && locked.val) {
-      sendAlert('Arduino restarted in lock state!');
+      sendAlert('arduino restarted in lock state!');
     }
     StateMap.upsert({key: 'locked'}, {$set: {val: false}});
   } else if (msg.startsWith('bat:')) {
@@ -157,7 +157,7 @@ var handle_micro_msg = function(msg) {
     var voltage = parseInt(parts[0]);
     var percentage = parseInt(parts[1]);
     if (voltage < 3510 && percentage <= 13) {
-      sendAlert('Error: undervoltage');
+      sendAlert('undervoltage');
     }
   } else if (msg === "Locked") {
     StateMap.upsert({key: 'locked'}, {$set: {val: true}});
@@ -165,7 +165,7 @@ var handle_micro_msg = function(msg) {
     StateMap.upsert({key: 'locked'}, {$set: {val: false}});
   } else if (msg === "second_move") {
     StateMap.upsert({key: 'locked'}, {$set: {val: false}});
-    sendAlert('Second move!');
+    sendAlert('second move!');
   }
   StateMap.upsert({key: 'lastSMS'}, {$set: {val: msg}});
   last_ping = (new Date()).getTime();
@@ -204,7 +204,7 @@ Meteor.setInterval(function() {
     }
     if (last_ping + WATCHDOG_TIMEOUT < (new Date()).getTime()) {
       console.log('watchdog too old', last_ping, (new Date()).getTime());
-      sendAlert('Watchdog expired!');
+      sendAlert('watchdog expired!');
       StateMap.update(locked._id, {$set: {val: false}});
     } else {
       console.log('interval', (new Date()).getTime() - last_ping);
