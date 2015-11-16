@@ -89,8 +89,9 @@ var sendRing = function(to_number, from_number) {
 
 var sendAlert = function(msg) {
   var CHASE_PHONE = '+15125778778';
+  msg = 'Alert: ' + msg;
   sendPushbullet(msg, '', 'nexus4chase');
-  sendSMS(CHASE_PHONE, 'Alert: ' + msg);
+  sendSMS(CHASE_PHONE, msg);
 };
 
 Meteor.methods({
