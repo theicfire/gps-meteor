@@ -14,9 +14,11 @@
 </template>
 
 <template name="Buttons">
+  <br/>
+  <br/>
   <div>
     SMS:
-  <button class="sms-button">gps</button>
+  <button class="sms-button">steam_gps</button>
   <button class="sms-button">lock</button>
   <button class="sms-button">unlock</button>
   <button class="sms-button">bat</button>
@@ -26,6 +28,7 @@
 <template name="State">
   <div>
     Lock: {{lock}}<br/>
+    GPS Streaming: {{stream_gps}}<br/>
     Last SMS: {{lastSMS}}<br/>
     Ring Status: {{ringStatus}}
 

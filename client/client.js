@@ -2,12 +2,6 @@ var curMarker;
 var globalMap;
 var KEYS = {DOWN: 40, UP: 38};
 var centeredOnce;
-var phone_action_map = {
-  'lock':   '+15126435858',
-  'unlock': '+15126435681',
-  'bat':    '+15126435786',
-  'gps':    '+15128722240',
-};
 
 var previousCoord = function(event) {
     event.preventDefault();
@@ -57,7 +51,7 @@ Template.ArduinoListing.events({
 Template.Buttons.events({
     'click .sms-button': function(event) {
       console.log('send', event.target.innerHTML);
-      Meteor.call('sendRing', phone_action_map[event.target.innerHTML]);
+      Meteor.call('sendRing', event.target.innerHTML);
     }
 });
 
@@ -113,6 +107,10 @@ Template.State.helpers({
   lock: function() {
     var locked = StateMap.findOne({key: 'locked'});
     return locked && locked.val ? 'ON' : 'OFF';
+  },
+  stream_gps: function() {
+    var stream_gps = StateMap.findOne({key: 'stream_gps'});
+    return stream_gps && stream_gps.val ? 'ON' : 'OFF';
   },
   lastSMS: function() {
     var lastSMS = StateMap.findOne({key: 'lastSMS'});

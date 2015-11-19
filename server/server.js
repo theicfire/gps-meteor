@@ -8,22 +8,18 @@ var last_ping;
 var MICRO_PHONE = '+16507720745';
 var WATCHDOG_TIMEOUT = 350000;
 var pusher = new PushBullet('oYHlSULc3i998hvbuVtsjlH0ps23l7y2');
+var phone_action_map = {
+  'lock':   '+15126435858',
+  'unlock': '+15126435681',
+  'bat':    '+15126435786',
+  'stream_gps':    '+15128722240',
+};
 
 Meteor.startup(function () {
     console.log('start up');
     if (Coords.find().count() === 0) {
         Coords.insert({lat: 37.446013, long: -122.125731, createdAt: (new Date()).getTime()})
     }
-    StateMap.find({key: 'locked'}).observeChanges({
-      added: function() {
-        console.log('locked added');
-        last_ping = (new Date()).getTime();
-      },
-      changed: function() {
-        console.log('locked updated');
-        last_ping = (new Date()).getTime();
-      },
-    });
 });
 
 Meteor.publish('coords', function(num) {
@@ -98,7 +94,8 @@ Meteor.methods({
     removeAll: function() {
       Coords.remove({from_arduino: true});
     },
-    sendRing: function (from_number) {
+    sendRing: function (action) {
+      var from_number = phone_action_map[action];
       StateMap.upsert({key: 'ringStatus'}, {$set: {val: 'ringing'}});
       sendRing(MICRO_PHONE, from_number);
     },
@@ -149,7 +146,7 @@ var handle_micro_msg = function(msg) {
     if (locked && locked.val) {
       sendAlert('arduino restarted in lock state!');
     }
-    StateMap.upsert({key: 'locked'}, {$set: {val: false}});
+    StateMap.upsert({key: 'locked'}, {$set: {val: true}});
   } else if (msg.startsWith('bat:')) {
     var parts = msg.split('bat:');
     console.log(parts);
@@ -169,8 +166,14 @@ var handle_micro_msg = function(msg) {
     sendAlert('second move!');
   }
   StateMap.upsert({key: 'lastSMS'}, {$set: {val: msg}});
-  last_ping = (new Date()).getTime();
   console.log('update last_ping', last_ping);
+  last_ping = (new Date()).getTime();
+   
+  if (msg === 'stream_gps') {
+    StateMap.upsert({key: 'stream_gps'}, {$set: {val: true}});
+  } else {
+    StateMap.upsert({key: 'stream_gps'}, {$set: {val: false}});
+  }
 };
 
 Router.route('/sms', {where: 'server'})
