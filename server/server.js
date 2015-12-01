@@ -13,6 +13,7 @@ var phone_action_map = {
   'unlock': '+15126435681',
   'bat':    '+15126435786',
   'stream_gps':    '+15128722240',
+  'siren_1sec':    '+15126436369',
 };
 
 Meteor.startup(function () {
