@@ -155,7 +155,7 @@ var handle_micro_msg = function(msg) {
     console.log(parts);
     var voltage = parseInt(parts[0]);
     var percentage = parseInt(parts[1]);
-    if (voltage < 3510 && percentage <= 13) {
+    if (voltage < 3520 && percentage < 17) {
       sendAlert('undervoltage');
     }
   } else if (msg === "Locked") {
