@@ -88,6 +88,7 @@ var sendAlert = function(msg) {
   var CHASE_PHONE = '+15125778778';
   msg = 'Alert: ' + msg;
   sendPushbullet(msg, '', 'nexus4chase');
+  sendPushbullet(msg, '', 'iphoneoliver');
   sendSMS(CHASE_PHONE, msg);
 };
 
