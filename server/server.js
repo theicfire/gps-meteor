@@ -164,7 +164,6 @@ var handle_micro_msg = function(msg) {
   } else if (msg === "Unlocked") {
     StateMap.upsert({key: 'locked'}, {$set: {val: false}});
   } else if (msg === "second_move") {
-    StateMap.upsert({key: 'locked'}, {$set: {val: false}});
     sendAlert('second move!');
   }
   StateMap.upsert({key: 'lastSMS'}, {$set: {val: msg}});
