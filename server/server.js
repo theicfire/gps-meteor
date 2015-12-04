@@ -159,12 +159,13 @@ var handle_micro_msg = function(msg) {
     if (voltage < 3520 && percentage < 17) {
       sendAlert('undervoltage');
     }
+  } else if (msg.startsWith('move_count:')) {
+    sendAlert(msg);
   } else if (msg === "Locked") {
     StateMap.upsert({key: 'locked'}, {$set: {val: true}});
   } else if (msg === "Unlocked") {
     StateMap.upsert({key: 'locked'}, {$set: {val: false}});
   } else if (msg === "second_move") {
-    sendAlert('second move!');
   }
   StateMap.upsert({key: 'lastSMS'}, {$set: {val: msg}});
   console.log('update last_ping', last_ping);
