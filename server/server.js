@@ -3,7 +3,7 @@ var net = Meteor.npmRequire('net');
 var PushBullet = Meteor.npmRequire('pushbullet');
 Meteor.npmRequire('log-timestamp'); // TODO can't mup do this for me?
 var client = Twilio('ACa8b26113996868bf72b7fab2a8ea0361', '47d7dc0b6dc56c2161dc44bc0324bb70');
-var last_ping;
+var last_ping = (new Date()).getTime();
 var MICRO_PHONE = '+16502356065';
 //var MICRO_PHONE = '+16507720745'; // Stolen :(
 var WATCHDOG_TIMEOUT = 1800000;

@@ -19,7 +19,7 @@
 
   "appName": "gps",
 
-  "app": "/Users/chase/trash/gps-meteor",
+  "app": "/Users/chase/boosted/gps-meteor",
 
   "env": {
     "ROOT_URL": "http://gps.chaselambda.com"
