@@ -51,7 +51,7 @@ Template.ArduinoListing.events({
 Template.Buttons.events({
     'click .sms-button': function(event) {
       console.log('send', event.target.innerHTML);
-      Meteor.call('sendRing', event.target.innerHTML, 'SF');
+      Meteor.call('sendRing', event.target.innerHTML, this.toString());
     }
 });
 
