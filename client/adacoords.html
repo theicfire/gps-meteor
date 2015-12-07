@@ -1,12 +1,16 @@
 <template name="ArduinoListing">
-{{>Buttons}}
-{{>State}}
+  {{#each micro_names}}
+    <h2>{{name}}</h2>
+    {{>Buttons name}}
+    {{>State name}}
+  {{/each}}
+
+  <br/><br/>
   <button class="reset">Delete all points</button>
   <div>Coords:</div>
-{{#each coords}}
-{{>SingleCoord}}
-{{/each}}
-
+  {{#each coords}}
+  {{>SingleCoord}}
+  {{/each}}
 </template>
 
 <template name="SingleCoord">
@@ -14,8 +18,6 @@
 </template>
 
 <template name="Buttons">
-  <br/>
-  <br/>
   <div>
     SMS:
   <button class="sms-button">stream_gps</button>
@@ -31,7 +33,7 @@
     Lock: {{lock}}<br/>
     GPS Streaming: {{stream_gps}}<br/>
     Last SMS: {{lastSMS}}<br/>
-    Ring Status: {{ringStatus 'SF'}}
+    Ring Status: {{ringStatus}}
 
   </div>
 </template>

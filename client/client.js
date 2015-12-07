@@ -100,26 +100,29 @@ Template.Map.helpers({
 Template.ArduinoListing.helpers({
     coords: function() {
       return Coords.find({from_arduino: true});
-    }
+    },
+  micro_names: function() {
+    return [{'name': 'SF'}, {'name': 'Caltrain'}];
+  }
 });
 
 Template.State.helpers({
   lock: function() {
-    var locked = StateMap.findOne({key: 'locked'});
+    var locked = StateMap.findOne({key: 'locked', micro_name: this.toString()});
     return locked && locked.val ? 'ON' : 'OFF';
   },
   stream_gps: function() {
-    var stream_gps = StateMap.findOne({key: 'stream_gps'});
+    var stream_gps = StateMap.findOne({key: 'stream_gps', micro_name: this.toString()});
     return stream_gps && stream_gps.val ? 'ON' : 'OFF';
   },
   lastSMS: function() {
-    var lastSMS = StateMap.findOne({key: 'lastSMS'});
+    var lastSMS = StateMap.findOne({key: 'lastSMS', micro_name: this.toString()});
     return lastSMS ? lastSMS.val : 'None';
   },
-  ringStatus: function(micro_name) {
-    var ringStatus = StateMap.findOne({key: 'ringStatus'});
-    return micro_name + (ringStatus ? ringStatus.val : 'None');
-  }
+  ringStatus: function() {
+    var ringStatus = StateMap.findOne({key: 'ringStatus', micro_name: this.toString()});
+    return this + (ringStatus ? ringStatus.val : 'None');
+  },
 });
 
 Router.route('/', function () {

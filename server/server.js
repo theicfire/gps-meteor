@@ -100,7 +100,7 @@ Meteor.methods({
     },
     sendRing: function (action, micro_name) {
       var from_number = phone_action_map[action];
-      StateMap.upsert({key: 'ringStatus'}, {$set: {val: 'ringing'}});
+      StateMap.upsert({key: 'ringStatus', micro_name: micro_name}, {$set: {val: 'ringing'}});
       sendRing(MICRO_PHONE[micro_name], from_number);
     },
 });
@@ -147,11 +147,11 @@ var handle_micro_msg = function(msg) {
     log('insert', coord);
     Coords.insert(coord);
   } else if (msg.startsWith('srt:')) {
-    var locked = StateMap.findOne({key: 'locked'});
+    var locked = StateMap.findOne({key: 'locked', micro_name: micro_name});
     if (locked && locked.val) {
       sendAlert('arduino restarted in lock state!');
     }
-    StateMap.upsert({key: 'locked'}, {$set: {val: true}});
+    StateMap.upsert({key: 'locked', micro_name: micro_name}, {$set: {val: true}});
   } else if (msg.startsWith('bat:')) {
     var parts = msg.split('bat:');
     log(parts);
@@ -165,19 +165,19 @@ var handle_micro_msg = function(msg) {
   } else if (msg.startsWith('move_count:')) {
     sendAlert(msg);
   } else if (msg === "Locked") {
-    StateMap.upsert({key: 'locked'}, {$set: {val: true}});
+    StateMap.upsert({key: 'locked', micro_name: micro_name}, {$set: {val: true}});
   } else if (msg === "Unlocked") {
-    StateMap.upsert({key: 'locked'}, {$set: {val: false}});
+    StateMap.upsert({key: 'locked', micro_name: micro_name}, {$set: {val: false}});
   } else if (msg === "second_move") {
   }
-  StateMap.upsert({key: 'lastSMS'}, {$set: {val: msg}});
+  StateMap.upsert({key: 'lastSMS', micro_name: micro_name}, {$set: {val: msg}});
   log('update last_pings[' + key + ']');
   last_pings[micro_name] = (new Date()).getTime();
    
   if (msg === 'stream_gps') {
-    StateMap.upsert({key: 'stream_gps'}, {$set: {val: true}});
+    StateMap.upsert({key: 'stream_gps', micro_name: micro_name}, {$set: {val: true}});
   } else {
-    StateMap.upsert({key: 'stream_gps'}, {$set: {val: false}});
+    StateMap.upsert({key: 'stream_gps', micro_name: micro_name}, {$set: {val: false}});
   }
 };
 
@@ -200,18 +200,18 @@ Router.route('/call', {where: 'server'})
 Router.route('/call_completed', {where: 'server'})
   .post(function () {
       log('call completed');
-      StateMap.upsert({key: 'ringStatus'}, {$set: {val: 'completed'}});
+      StateMap.upsert({key: 'ringStatus', micro_name: micro_name}, {$set: {val: 'completed'}});
       var headers = {'Content-type': 'text/xml'};
       this.response.writeHead(200, headers);
       this.response.end();
   });
 
 Meteor.setInterval(function() {
-    var locked = StateMap.findOne({key: 'locked'});
-    if (!locked || !locked.val) {
-      return;
-    }
-    Object.keys(last_pings).forEach(function (key) {
+    Object.keys(last_pings).forEach(function (micro_name) {
+      var locked = StateMap.findOne({key: 'locked', micro_name: micro_name});
+      if (!locked || !locked.val) {
+        return;
+      }
       if (last_pings[key] + WATCHDOG_TIMEOUT < (new Date()).getTime()) {
         log('watchdog too old for', key + ':', last_pings[key], (new Date()).getTime());
         sendAlert('watchdog expired!');
