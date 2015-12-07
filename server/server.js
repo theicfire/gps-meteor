@@ -3,7 +3,8 @@ var net = Meteor.npmRequire('net');
 var PushBullet = Meteor.npmRequire('pushbullet');
 var client = Twilio('ACa8b26113996868bf72b7fab2a8ea0361', '47d7dc0b6dc56c2161dc44bc0324bb70');
 var last_pings = {'SF': (new Date()).getTime(), 'Caltrain': (new Date()).getTime()};
-var MICRO_PHONE = {'SF': '+16502356065', 'Caltrain': '+16504417308'};
+var MICRO_PHONES = {'SF': '+16502356065', 'Caltrain': '+16504417308'};
+var MICRO_PHONES_INVERSE = invert(MICRO_PHONES);
 var WATCHDOG_TIMEOUT = 1800000;
 var pusher = new PushBullet('oYHlSULc3i998hvbuVtsjlH0ps23l7y2');
 var phone_action_map = {
@@ -102,7 +103,7 @@ Meteor.methods({
     sendRing: function (action, micro_name) {
       var from_number = phone_action_map[action];
       StateMap.upsert({key: 'ringStatus', micro_name: micro_name}, {$set: {val: 'ringing'}});
-      sendRing(MICRO_PHONE[micro_name], from_number);
+      sendRing(MICRO_PHONES[micro_name], from_number);
     },
 });
 
@@ -200,9 +201,8 @@ Router.route('/call', {where: 'server'})
 
 Router.route('/call_completed', {where: 'server'})
   .post(function () {
-      log('call completed');
-      log(this.request.body);
-      var micro_name = 'SF';
+      var micro_name = MICRO_PHONES_INVERSE[this.request.body.To];
+      log('call completed', micro_name);
       StateMap.upsert({key: 'ringStatus', micro_name: micro_name}, {$set: {val: 'completed'}});
       var headers = {'Content-type': 'text/xml'};
       this.response.writeHead(200, headers);
@@ -236,3 +236,11 @@ net.createServer( Meteor.bindEnvironment( function ( socket ) {
         handle_micro_msg(data.toString('ascii'));
   }));
 })).listen( 5000 );
+
+function invert(o) {
+  var ret = {};
+  Object.keys(o).forEach(function (k) {
+    ret[o[k]] = k;
+  });
+  return ret;
+}
