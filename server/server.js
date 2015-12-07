@@ -5,6 +5,7 @@ var client = Twilio('ACa8b26113996868bf72b7fab2a8ea0361', '47d7dc0b6dc56c2161dc4
 var last_pings = {'SF': (new Date()).getTime(), 'Caltrain': (new Date()).getTime()};
 var MICRO_PHONES = {'SF': '+16502356065', 'Caltrain': '+16504417308'};
 var MICRO_PHONES_INVERSE = invert(MICRO_PHONES);
+var MICRO_PHONE_IMEIS = {'2637': 'Caltrain'};
 var WATCHDOG_TIMEOUT = 1800000;
 var pusher = new PushBullet('oYHlSULc3i998hvbuVtsjlH0ps23l7y2');
 var phone_action_map = {
@@ -134,9 +135,16 @@ Router.route('/add_arduino/:lat/:long/:type', {where: 'server'})
   });
 
 var handle_micro_msg = function(msg) {
-  var micro_name = 'SF';
   msg = msg.trim();
   log('handling', msg);
+
+  var micro_name = 'SF';
+  var possible_imei = MICRO_PHONE_IMEIS[msg.substr(0, 4)];
+  if (possible_imei) {
+    micro_name = possible_imei;
+    msg = msg.substr(5);
+  }
+
   if (msg.startsWith('gps:')) {
     parts = msg.split(':');
     var coord = {
@@ -151,7 +159,7 @@ var handle_micro_msg = function(msg) {
   } else if (msg.startsWith('srt:')) {
     var locked = StateMap.findOne({key: 'locked', micro_name: micro_name});
     if (locked && locked.val) {
-      sendAlert('arduino restarted in lock state!');
+      sendAlert(micro_name + ' arduino restarted in lock state!');
     }
     StateMap.upsert({key: 'locked', micro_name: micro_name}, {$set: {val: true}});
   } else if (msg.startsWith('bat:')) {
@@ -162,13 +170,15 @@ var handle_micro_msg = function(msg) {
     var voltage = parseInt(parts[0]);
     var percentage = parseInt(parts[1]);
     if (voltage < 3520 && percentage < 17) {
-      sendAlert('undervoltage');
+      sendAlert('undervoltage ' + micro_name);
     }
   } else if (msg.startsWith('move_count:')) {
-    sendAlert(msg);
+    sendAlert(micro_name + ' ' + msg);
   } else if (msg === "Locked") {
+    console.log('locked', micro_name);
     StateMap.upsert({key: 'locked', micro_name: micro_name}, {$set: {val: true}});
   } else if (msg === "Unlocked") {
+    console.log('unlocked', micro_name);
     StateMap.upsert({key: 'locked', micro_name: micro_name}, {$set: {val: false}});
   } else if (msg === "second_move") {
   }
@@ -177,8 +187,10 @@ var handle_micro_msg = function(msg) {
   last_pings[micro_name] = (new Date()).getTime();
    
   if (msg === 'stream_gps') {
+    console.log('stream_gps on ', micro_name);
     StateMap.upsert({key: 'stream_gps', micro_name: micro_name}, {$set: {val: true}});
   } else {
+    console.log('stream_gps off ', micro_name);
     StateMap.upsert({key: 'stream_gps', micro_name: micro_name}, {$set: {val: false}});
   }
 };
