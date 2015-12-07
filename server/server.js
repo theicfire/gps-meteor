@@ -3,8 +3,8 @@ var net = Meteor.npmRequire('net');
 var PushBullet = Meteor.npmRequire('pushbullet');
 Meteor.npmRequire('log-timestamp'); // TODO can't mup do this for me?
 var client = Twilio('ACa8b26113996868bf72b7fab2a8ea0361', '47d7dc0b6dc56c2161dc44bc0324bb70');
-var last_ping = (new Date()).getTime();
-var MICRO_PHONE = '+16502356065';
+var last_pings = {'SF': (new Date()).getTime(), 'Caltrain': (new Date()).getTime()};
+var MICRO_PHONE = {'SF': '+16502356065', 'Caltrain': '+16504417308'};
 //var MICRO_PHONE = '+16507720745'; // Stolen :(
 var WATCHDOG_TIMEOUT = 1800000;
 var pusher = new PushBullet('oYHlSULc3i998hvbuVtsjlH0ps23l7y2');
@@ -96,10 +96,10 @@ Meteor.methods({
     removeAll: function() {
       Coords.remove({from_arduino: true});
     },
-    sendRing: function (action) {
+    sendRing: function (action, micro_name) {
       var from_number = phone_action_map[action];
       StateMap.upsert({key: 'ringStatus'}, {$set: {val: 'ringing'}});
-      sendRing(MICRO_PHONE, from_number);
+      sendRing(MICRO_PHONE[micro_name], from_number);
     },
 });
 
@@ -130,6 +130,7 @@ Router.route('/add_arduino/:lat/:long/:type', {where: 'server'})
   });
 
 var handle_micro_msg = function(msg) {
+  var micro_name = 'SF';
   msg = msg.trim();
   console.log('handling', msg);
   if (msg.startsWith('gps:')) {
@@ -168,8 +169,8 @@ var handle_micro_msg = function(msg) {
   } else if (msg === "second_move") {
   }
   StateMap.upsert({key: 'lastSMS'}, {$set: {val: msg}});
-  console.log('update last_ping', last_ping);
-  last_ping = (new Date()).getTime();
+  console.log('update last_pings[' + key + ']');
+  last_pings[micro_name] = (new Date()).getTime();
    
   if (msg === 'stream_gps') {
     StateMap.upsert({key: 'stream_gps'}, {$set: {val: true}});
@@ -208,13 +209,15 @@ Meteor.setInterval(function() {
     if (!locked || !locked.val) {
       return;
     }
-    if (last_ping + WATCHDOG_TIMEOUT < (new Date()).getTime()) {
-      console.log('watchdog too old', last_ping, (new Date()).getTime());
-      sendAlert('watchdog expired!');
-      StateMap.update(locked._id, {$set: {val: false}});
-    } else {
-      console.log('interval', (new Date()).getTime() - last_ping);
-    }
+    Object.keys(last_pings).forEach(function (key) {
+      if (last_pings[key] + WATCHDOG_TIMEOUT < (new Date()).getTime()) {
+        console.log('watchdog too old for', key + ':', last_pings[key], (new Date()).getTime());
+        sendAlert('watchdog expired!');
+        StateMap.update(locked._id, {$set: {val: false}});
+      } else {
+        console.log('interval', (new Date()).getTime() - last_pings[key]);
+      }
+    });
 }, 2000);
 
 net.createServer( Meteor.bindEnvironment( function ( socket ) {

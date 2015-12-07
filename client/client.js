@@ -51,7 +51,7 @@ Template.ArduinoListing.events({
 Template.Buttons.events({
     'click .sms-button': function(event) {
       console.log('send', event.target.innerHTML);
-      Meteor.call('sendRing', event.target.innerHTML);
+      Meteor.call('sendRing', event.target.innerHTML, 'SF');
     }
 });
 
@@ -116,9 +116,9 @@ Template.State.helpers({
     var lastSMS = StateMap.findOne({key: 'lastSMS'});
     return lastSMS ? lastSMS.val : 'None';
   },
-  ringStatus: function() {
+  ringStatus: function(micro_name) {
     var ringStatus = StateMap.findOne({key: 'ringStatus'});
-    return ringStatus ? ringStatus.val : 'None';
+    return micro_name + (ringStatus ? ringStatus.val : 'None');
   }
 });
 
