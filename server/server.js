@@ -1,11 +1,9 @@
 var Twilio = Meteor.npmRequire('twilio');
 var net = Meteor.npmRequire('net');
 var PushBullet = Meteor.npmRequire('pushbullet');
-Meteor.npmRequire('log-timestamp'); // TODO can't mup do this for me?
 var client = Twilio('ACa8b26113996868bf72b7fab2a8ea0361', '47d7dc0b6dc56c2161dc44bc0324bb70');
 var last_pings = {'SF': (new Date()).getTime(), 'Caltrain': (new Date()).getTime()};
 var MICRO_PHONE = {'SF': '+16502356065', 'Caltrain': '+16504417308'};
-//var MICRO_PHONE = '+16507720745'; // Stolen :(
 var WATCHDOG_TIMEOUT = 1800000;
 var pusher = new PushBullet('oYHlSULc3i998hvbuVtsjlH0ps23l7y2');
 var phone_action_map = {
@@ -16,8 +14,12 @@ var phone_action_map = {
   'siren_1sec':    '+15126436369',
 };
 
+function log(s) {
+  console.log('[' + new Date().toISOString() + '] ' + s);
+}
+
 Meteor.startup(function () {
-    console.log('start up');
+    log('start up');
     if (Coords.find().count() === 0) {
         Coords.insert({lat: 37.446013, long: -122.125731, createdAt: (new Date()).getTime()})
     }
@@ -43,8 +45,8 @@ var sendSMS = function(number, msg) {
       from: '+15128722240',
       body: msg
     }, function (err, res) {
-      console.log('err', err);
-      console.log('res', res);
+      log('err', err);
+      log('res', res);
     });
 };
 
@@ -69,7 +71,7 @@ var sendPushbullet = function(title, msg, phone_nickname, cb) {
 };
 
 var sendRing = function(to_number, from_number) {
-  console.log('send ring to', from_number);
+  log('send ring to', from_number);
     client.calls.create({
       to: to_number,
       from: from_number,
@@ -79,8 +81,8 @@ var sendRing = function(to_number, from_number) {
       statusCallbackMethod: "POST",
       statusCallbackEvent: ["completed"],
     }, function (err, res) {
-      console.log('err', err);
-      console.log('res', res);
+      log('err', err);
+      log('res', res);
     });
 };
 
@@ -132,7 +134,7 @@ Router.route('/add_arduino/:lat/:long/:type', {where: 'server'})
 var handle_micro_msg = function(msg) {
   var micro_name = 'SF';
   msg = msg.trim();
-  console.log('handling', msg);
+  log('handling', msg);
   if (msg.startsWith('gps:')) {
     parts = msg.split(':');
     var coord = {
@@ -142,7 +144,7 @@ var handle_micro_msg = function(msg) {
       type: 'gps',
       from_arduino: true
     };
-    console.log('insert', coord);
+    log('insert', coord);
     Coords.insert(coord);
   } else if (msg.startsWith('srt:')) {
     var locked = StateMap.findOne({key: 'locked'});
@@ -152,9 +154,9 @@ var handle_micro_msg = function(msg) {
     StateMap.upsert({key: 'locked'}, {$set: {val: true}});
   } else if (msg.startsWith('bat:')) {
     var parts = msg.split('bat:');
-    console.log(parts);
+    log(parts);
     parts = parts[1].split('/');
-    console.log(parts);
+    log(parts);
     var voltage = parseInt(parts[0]);
     var percentage = parseInt(parts[1]);
     if (voltage < 3520 && percentage < 17) {
@@ -169,7 +171,7 @@ var handle_micro_msg = function(msg) {
   } else if (msg === "second_move") {
   }
   StateMap.upsert({key: 'lastSMS'}, {$set: {val: msg}});
-  console.log('update last_pings[' + key + ']');
+  log('update last_pings[' + key + ']');
   last_pings[micro_name] = (new Date()).getTime();
    
   if (msg === 'stream_gps') {
@@ -189,7 +191,7 @@ Router.route('/sms', {where: 'server'})
 
 Router.route('/call', {where: 'server'})
   .post(function () {
-      console.log('hit call');
+      log('hit call');
       var headers = {'Content-type': 'text/xml'};
       this.response.writeHead(200, headers);
       this.response.end('<Response></Response>');
@@ -197,7 +199,7 @@ Router.route('/call', {where: 'server'})
 
 Router.route('/call_completed', {where: 'server'})
   .post(function () {
-      console.log('call completed');
+      log('call completed');
       StateMap.upsert({key: 'ringStatus'}, {$set: {val: 'completed'}});
       var headers = {'Content-type': 'text/xml'};
       this.response.writeHead(200, headers);
@@ -211,19 +213,19 @@ Meteor.setInterval(function() {
     }
     Object.keys(last_pings).forEach(function (key) {
       if (last_pings[key] + WATCHDOG_TIMEOUT < (new Date()).getTime()) {
-        console.log('watchdog too old for', key + ':', last_pings[key], (new Date()).getTime());
+        log('watchdog too old for', key + ':', last_pings[key], (new Date()).getTime());
         sendAlert('watchdog expired!');
         StateMap.update(locked._id, {$set: {val: false}});
       } else {
-        console.log('interval', (new Date()).getTime() - last_pings[key]);
+        log('interval', (new Date()).getTime() - last_pings[key]);
       }
     });
 }, 2000);
 
 net.createServer( Meteor.bindEnvironment( function ( socket ) {
   socket.on("error", function(err) {
-    console.log("Caught tcp error: ");
-    console.log(err.stack);
+    log("Caught tcp error: ");
+    log(err.stack);
     socket.destroy();
   });
 
