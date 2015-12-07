@@ -74,18 +74,18 @@ var sendPushbullet = function(title, msg, phone_nickname, cb) {
 
 var sendRing = function(to_number, from_number) {
   log('send ring to', from_number);
-    client.calls.create({
-      to: to_number,
-      from: from_number,
-      url: "http://gps.chaselambda.com",
-      timeout: 1,
-      statusCallback: "http://gps.chaselambda.com/call_completed",
-      statusCallbackMethod: "POST",
-      statusCallbackEvent: ["completed"],
-    }, function (err, res) {
-      log('err', err);
-      log('res', res);
-    });
+  client.calls.create({
+    to: to_number,
+    from: from_number,
+    url: "http://gps.chaselambda.com",
+    timeout: 1,
+    statusCallback: "http://gps.chaselambda.com/call_completed",
+    statusCallbackMethod: "POST",
+    statusCallbackEvent: ["completed"],
+  }, function (err, res) {
+    log('err', err);
+    log('res', res);
+  });
 };
 
 var sendAlert = function(msg) {
