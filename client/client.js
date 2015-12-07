@@ -121,7 +121,7 @@ Template.State.helpers({
   },
   ringStatus: function() {
     var ringStatus = StateMap.findOne({key: 'ringStatus', micro_name: this.toString()});
-    return this + (ringStatus ? ringStatus.val : 'None');
+    return ringStatus ? ringStatus.val : 'None';
   },
 });
 
