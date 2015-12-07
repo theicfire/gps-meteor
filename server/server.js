@@ -14,8 +14,9 @@ var phone_action_map = {
   'siren_1sec':    '+15126436369',
 };
 
-function log(s) {
-  console.log('[' + new Date().toISOString() + '] ' + s);
+function log() {
+  arguments[0] = '[' + new Date().toISOString() + '] ' + arguments[0];
+  console.log.apply(this, arguments);
 }
 
 Meteor.startup(function () {
