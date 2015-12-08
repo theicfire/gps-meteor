@@ -158,7 +158,7 @@ var handle_micro_msg = function(msg) {
     Coords.insert(coord);
   } else if (msg.startsWith('srt:')) {
     var locked = StateMap.findOne({key: 'locked', micro_name: micro_name});
-    if (locked && locked.val) {
+    if (locked && locked.val && micro_name === 'SF') {
       sendAlert(micro_name + ' arduino restarted in lock state!');
     }
     StateMap.upsert({key: 'locked', micro_name: micro_name}, {$set: {val: true}});
@@ -169,10 +169,10 @@ var handle_micro_msg = function(msg) {
     log(parts);
     var voltage = parseInt(parts[0]);
     var percentage = parseInt(parts[1]);
-    if (voltage < 3520 && percentage < 17) {
+    if (voltage < 3520 && percentage < 17 && micro_name === 'SF') {
       sendAlert('undervoltage ' + micro_name);
     }
-  } else if (msg.startsWith('move_count:')) {
+  } else if (msg.startsWith('move_count:') && micro_name === 'SF') {
     sendAlert(micro_name + ' ' + msg);
   } else if (msg === "Locked") {
     console.log('locked', micro_name);
@@ -227,7 +227,7 @@ Meteor.setInterval(function() {
       if (!locked || !locked.val) {
         return;
       }
-      if (last_pings[micro_name] + WATCHDOG_TIMEOUT < (new Date()).getTime()) {
+      if (last_pings[micro_name] + WATCHDOG_TIMEOUT < (new Date()).getTime() && micro_name === 'SF') {
         log('watchdog too old for', micro_name + ':', last_pings[micro_name], (new Date()).getTime());
         sendAlert('watchdog expired!');
         StateMap.update(locked._id, {$set: {val: false}});
