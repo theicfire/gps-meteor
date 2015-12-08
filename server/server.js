@@ -136,7 +136,6 @@ Router.route('/add_arduino/:lat/:long/:type', {where: 'server'})
 
 var handle_micro_msg = function(msg) {
   msg = msg.trim();
-  log('handling', msg);
 
   var micro_name = 'SF';
   var possible_imei = MICRO_PHONE_IMEIS[msg.substr(0, 4)];
@@ -144,6 +143,7 @@ var handle_micro_msg = function(msg) {
     micro_name = possible_imei;
     msg = msg.substr(5);
   }
+  log('handling', micro_name, msg);
 
   if (msg.startsWith('gps:')) {
     parts = msg.split(':');
