@@ -1,4 +1,5 @@
 var Twilio = Meteor.npmRequire('twilio');
+var fs = Meteor.npmRequire('fs');
 var net = Meteor.npmRequire('net');
 var PushBullet = Meteor.npmRequire('pushbullet');
 var client = Twilio('ACa8b26113996868bf72b7fab2a8ea0361', '47d7dc0b6dc56c2161dc44bc0324bb70');
@@ -237,7 +238,7 @@ Meteor.setInterval(function() {
     });
 }, 2000);
 
-net.createServer( Meteor.bindEnvironment( function ( socket ) {
+net.createServer(Meteor.bindEnvironment( function ( socket ) {
   socket.on("error", function(err) {
     log("Caught tcp error: ");
     log(err.stack);
@@ -248,6 +249,42 @@ net.createServer( Meteor.bindEnvironment( function ( socket ) {
         handle_micro_msg(data.toString('ascii'));
   }));
 })).listen( 5000 );
+
+var global_client;
+
+net.createServer(Meteor.bindEnvironment( function ( socket ) {
+  var header = "HTTP/1.0 200 OK\r\nCache-Control: no-cache\r\nPragma: no-cache\r\nExpires: Thu, 01 Dec 1994 16:00:00 GMT\r\nConnection: close\r\nContent-Type: multipart/x-mixed-replace; boundary=--myboundary\r\n\r\n--myboundary\r\n";
+  socket.on("error", function(err) {
+    log("7000 tcp error: ");
+    log(err.stack);
+    socket.destroy();
+  });
+
+  socket.addListener( "data", Meteor.bindEnvironment( function ( data ) {
+        console.log('got data', data.toString('ascii'));
+        if (data.toString('ascii').indexOf('favicon') === -1) {
+            socket.write(header);
+            global_client = socket; // TODO kinda race condition.. this should be locked?
+        } else {
+          socket.end();
+        }
+  }));
+})).listen( 7000 );
+
+net.createServer(Meteor.bindEnvironment( function ( socket ) {
+  console.log('connection on 4000');
+  socket.on("error", function(err) {
+    log("4000 tcp error: ");
+    log(err.stack);
+    socket.destroy();
+  });
+
+  socket.addListener( "data", Meteor.bindEnvironment( function ( data ) {
+        if (global_client) {
+          global_client.write(data);
+        }
+  }));
+})).listen( 4000 );
 
 function invert(o) {
   var ret = {};
