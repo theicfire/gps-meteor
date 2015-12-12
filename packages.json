@@ -1,4 +1,5 @@
 {
+  "node-gcm": "0.9.15",
   "twilio": "2.5.2",
   "pushbullet": "1.4.3",
   "log-timestamp": "0.1.2"

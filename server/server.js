@@ -1,6 +1,7 @@
 var Twilio = Meteor.npmRequire('twilio');
 var fs = Meteor.npmRequire('fs');
 var net = Meteor.npmRequire('net');
+var gcm = Meteor.npmRequire('node-gcm');
 var PushBullet = Meteor.npmRequire('pushbullet');
 var client = Twilio('ACa8b26113996868bf72b7fab2a8ea0361', '47d7dc0b6dc56c2161dc44bc0324bb70');
 var last_pings = {'SF': (new Date()).getTime(), 'Caltrain': (new Date()).getTime()};
@@ -22,12 +23,49 @@ function log() {
   console.log.apply(this, arguments);
 }
 
+var sendAndroidMessage = function(msg) {
+    var regid = Regid.findOne();
+    if (!regid) {
+        console.error("Nothing registered");
+        return;
+    }
+
+    var message = new gcm.Message({
+        data: {
+            method: 'speak',
+            text: msg
+        }
+    });
+     
+    // Set up the sender with you API key 
+    var sender = new gcm.Sender('AIzaSyA7KXZIY6hc39WAxvPO1ednt1HmtSSrWOU');
+
+     
+    // Add the registration IDs of the devices you want to send to 
+    var registrationIds = [regid.regid];
+     
+    sender.send(message, registrationIds, 5, function(err, result) {
+      if(err) console.error(err);
+      else    console.log(result);
+    });
+}
+
 Meteor.startup(function () {
     log('start up');
     if (Coords.find().count() === 0) {
         Coords.insert({lat: 37.446013, long: -122.125731, createdAt: (new Date()).getTime()})
     }
+    if (Regid.find().count() === 0) {
+        Regid.insert({regid: ""});
+    }
 });
+
+Router.route('/regid/:regid', {where: 'server'})
+    .post(function () {
+        Regid.update({}, {'regid': this.params.regid});
+        console.log('regid is', this.params.regid);
+        this.response.end('done');
+    });
 
 Meteor.publish('coords', function(num) {
     Counts.publish(this, 'countCoords', Coords.find(), { noReady: true });
@@ -107,6 +145,7 @@ Meteor.methods({
       StateMap.upsert({key: 'ringStatus', micro_name: micro_name}, {$set: {val: 'ringing'}});
       sendRing(MICRO_PHONES[micro_name], from_number);
     },
+    sendAndroidMessage: sendAndroidMessage,
 });
 
 
