@@ -213,13 +213,13 @@ var handle_micro_msg = function(msg) {
     }
   } else if (msg.startsWith('move_count:') && micro_name === 'SF') {
     sendAlert(micro_name + ' ' + msg);
-  } else if (msg === "Locked") {
+  } else if (msg.indexOf("Locked") !== -1) {
     console.log('locked', micro_name);
     StateMap.upsert({key: 'locked', micro_name: micro_name}, {$set: {val: true}});
-  } else if (msg === "Unlocked") {
+  } else if (msg.indexOf("Unlocked") !== -1) {
     console.log('unlocked', micro_name);
     StateMap.upsert({key: 'locked', micro_name: micro_name}, {$set: {val: false}});
-  } else if (msg === "second_move") {
+  } else if (msg.indexOf("second_move") !== -1) {
   }
   StateMap.upsert({key: 'lastSMS', micro_name: micro_name}, {$set: {val: msg}});
   log('update last_pings[' + micro_name + ']');
