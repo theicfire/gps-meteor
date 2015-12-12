@@ -36,14 +36,13 @@ var sendAndroidMessage = function(msg) {
             text: msg
         }
     });
-     
+
     // Set up the sender with you API key 
     var sender = new gcm.Sender('AIzaSyA7KXZIY6hc39WAxvPO1ednt1HmtSSrWOU');
 
-     
     // Add the registration IDs of the devices you want to send to 
     var registrationIds = [regid.regid];
-     
+
     sender.send(message, registrationIds, 5, function(err, result) {
       if(err) console.error(err);
       else    console.log(result);
