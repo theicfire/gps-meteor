@@ -173,6 +173,16 @@ Router.route('/add_arduino/:lat/:long/:type', {where: 'server'})
       this.response.end('Received loc of ' + JSON.stringify(coord) + '\n');
   });
 
+Router.route('/setGlobalState/:key/:value', {where: 'server'})
+    .post(function () {
+        var value = this.params.value;
+        if (['cameraOn'].indexOf(this.params.key) >= 0) {
+            value = this.params.value === 'true';
+        }
+        StateMap.upsert({key: this.params.key, micro_name: 'Caltrain'}, {$set: {val: value}});
+        this.response.end('done');
+    });
+
 var handle_micro_msg = function(msg) {
   msg = msg.trim();
 

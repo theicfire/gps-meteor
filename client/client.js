@@ -123,6 +123,10 @@ Template.State.helpers({
     var lastSMS = StateMap.findOne({key: 'lastSMS', micro_name: this.toString()});
     return lastSMS ? lastSMS.val : 'None';
   },
+  cameraOn: function () {
+    var cameraOn = StateMap.findOne({key: 'cameraOn', micro_name: this.toString()});
+    return cameraOn ? cameraOn.val.toString() : 'None';
+  },
   ringStatus: function() {
     var ringStatus = StateMap.findOne({key: 'ringStatus', micro_name: this.toString()});
     return ringStatus ? ringStatus.val : 'None';
