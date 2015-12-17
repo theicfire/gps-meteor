@@ -6,6 +6,7 @@ var PushBullet = Meteor.npmRequire('pushbullet');
 var client = Twilio('ACa8b26113996868bf72b7fab2a8ea0361', '47d7dc0b6dc56c2161dc44bc0324bb70');
 var last_pings = {'SF': (new Date()).getTime(), 'Caltrain': (new Date()).getTime()};
 var MICRO_PHONES = {'SF': '+16502356065', 'Caltrain': '+16504417308'};
+var active_phones = ['SF'];
 var MICRO_PHONES_INVERSE = invert(MICRO_PHONES);
 var MICRO_PHONE_IMEIS = {'5218': 'Caltrain'};
 var WATCHDOG_TIMEOUT = 1800000;
@@ -127,9 +128,12 @@ var sendRing = function(to_number, from_number) {
   });
 };
 
-var sendAlert = function(msg) {
+var sendAlert = function(micro_name, msg) {
+  if (active_phones.indexOf(micro_name) === -1) {
+    return;
+  }
   var CHASE_PHONE = '+15125778778';
-  msg = 'Alert: ' + msg;
+  msg = micro_name + ' Alert: ' + msg;
   sendPushbullet(msg, '', 'nexus4chase');
   sendPushbullet(msg, '', 'iphoneoliver');
   sendSMS(CHASE_PHONE, msg);
@@ -207,8 +211,8 @@ var handle_micro_msg = function(msg) {
     Coords.insert(coord);
   } else if (msg.startsWith('srt:')) {
     var locked = StateMap.findOne({key: 'locked', micro_name: micro_name});
-    if (locked && locked.val && micro_name === 'SF') {
-      sendAlert(micro_name + ' arduino restarted in lock state!');
+    if (locked && locked.val) {
+      sendAlert(micro_name, 'arduino restarted in lock state!');
     }
     StateMap.upsert({key: 'locked', micro_name: micro_name}, {$set: {val: true}});
   } else if (msg.startsWith('bat:')) {
@@ -218,17 +222,21 @@ var handle_micro_msg = function(msg) {
     log(parts);
     var voltage = parseInt(parts[0]);
     var percentage = parseInt(parts[1]);
-    if (voltage < 3520 && percentage < 17 && micro_name === 'SF') {
-      sendAlert('undervoltage ' + micro_name);
+    if (voltage < 3520 && percentage < 17) {
+      sendAlert(micro_name, 'undervoltage');
     }
-  } else if (msg.startsWith('move_count:') && micro_name === 'SF') {
-    sendAlert(micro_name + ' ' + msg);
+  } else if (msg.startsWith('move_count:')) {
+    sendAlert(micro_name, msg);
   } else if (msg.indexOf("Locked") !== -1) {
     console.log('locked', micro_name);
     StateMap.upsert({key: 'locked', micro_name: micro_name}, {$set: {val: true}});
+    console.log('stream_gps off ', micro_name);
+    StateMap.upsert({key: 'stream_gps', micro_name: micro_name}, {$set: {val: false}});
   } else if (msg.indexOf("Unlocked") !== -1) {
     console.log('unlocked', micro_name);
     StateMap.upsert({key: 'locked', micro_name: micro_name}, {$set: {val: false}});
+    console.log('stream_gps off ', micro_name);
+    StateMap.upsert({key: 'stream_gps', micro_name: micro_name}, {$set: {val: false}});
   } else if (msg.indexOf("second_move") !== -1) {
   }
   StateMap.upsert({key: 'lastSMS', micro_name: micro_name}, {$set: {val: msg}});
@@ -238,9 +246,6 @@ var handle_micro_msg = function(msg) {
   if (msg === 'stream_gps') {
     console.log('stream_gps on ', micro_name);
     StateMap.upsert({key: 'stream_gps', micro_name: micro_name}, {$set: {val: true}});
-  } else {
-    console.log('stream_gps off ', micro_name);
-    StateMap.upsert({key: 'stream_gps', micro_name: micro_name}, {$set: {val: false}});
   }
 };
 
@@ -276,9 +281,9 @@ Meteor.setInterval(function() {
       if (!locked || !locked.val) {
         return;
       }
-      if (last_pings[micro_name] + WATCHDOG_TIMEOUT < (new Date()).getTime() && micro_name === 'SF') {
+      if (last_pings[micro_name] + WATCHDOG_TIMEOUT < (new Date()).getTime()) {
         log('watchdog too old for', micro_name + ':', last_pings[micro_name], (new Date()).getTime());
-        sendAlert('watchdog expired!');
+        sendAlert(micro_name, 'watchdog expired!');
         StateMap.update(locked._id, {$set: {val: false}});
       } else {
         log('interval', (new Date()).getTime() - last_pings[micro_name]);
