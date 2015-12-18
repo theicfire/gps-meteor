@@ -55,7 +55,7 @@ Template.Buttons.events({
     },
     'click .gcm-button': function(event) {
       console.log('send', event.target.innerHTML);
-      Meteor.call('sendAndroidMessage', event.target.innerHTML);
+      Meteor.call('sendAndroidMessage', event.target.innerHTML, this.toString());
     }
 });
 

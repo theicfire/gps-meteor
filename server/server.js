@@ -9,6 +9,7 @@ var MICRO_PHONES = {'SF': '+16502356065', 'Caltrain': '+16504417308'};
 var active_phones = ['SF'];
 var MICRO_PHONES_INVERSE = invert(MICRO_PHONES);
 var MICRO_PHONE_IMEIS = {'5218': 'Caltrain'};
+var PHONE_IDS = {'b1e01101f4a907fd': 'SF', 'noidyet': 'Caltrain'}; // TODO actual id
 var WATCHDOG_TIMEOUT = 1800000;
 var pusher = new PushBullet('oYHlSULc3i998hvbuVtsjlH0ps23l7y2');
 var phone_action_map = {
@@ -24,8 +25,8 @@ function log() {
   console.log.apply(this, arguments);
 }
 
-var sendAndroidMessage = function(msg) {
-    var regid = Regid.findOne();
+var sendAndroidMessage = function(msg, micro_name) {
+    var regid = Regid.findOne({micro_name: micro_name});
     if (!regid) {
         console.error("Nothing registered");
         return;
@@ -46,7 +47,7 @@ var sendAndroidMessage = function(msg) {
 
     sender.send(message, registrationIds, 5, function(err, result) {
       if(err) console.error(err);
-      else    console.log(result);
+      else    log(result);
     });
 }
 
@@ -55,15 +56,20 @@ Meteor.startup(function () {
     if (Coords.find().count() === 0) {
         Coords.insert({lat: 37.446013, long: -122.125731, createdAt: (new Date()).getTime()})
     }
-    if (Regid.find().count() === 0) {
-        Regid.insert({regid: ""});
-    }
 });
 
-Router.route('/regid/:regid', {where: 'server'})
+Router.route('/regid/:phone_id/:regid', {where: 'server'})
     .post(function () {
-        Regid.update({}, {'regid': this.params.regid});
-        console.log('regid is', this.params.regid);
+        if (!this.params.regid || this.params.regid.length === 0) { // TODO temporary, for my not-updated android phone
+          return;
+        }
+        var micro_name = 'SF';
+        if (PHONE_IDS[this.params.phone_id]) {
+          micro_name = PHONE_IDS[this.params.phone_id];
+        }
+
+        Regid.upsert({micro_name: micro_name}, {$set: {regid: this.params.regid}});
+        log('regid is', this.params.regid, 'phone_id is', this.params.phone_id, 'micro_name is', micro_name);
         this.response.end('done');
     });
 
@@ -177,13 +183,23 @@ Router.route('/add_arduino/:lat/:long/:type', {where: 'server'})
       this.response.end('Received loc of ' + JSON.stringify(coord) + '\n');
   });
 
-Router.route('/setGlobalState/:key/:value', {where: 'server'})
+Router.route('/setGlobalState/:phone_id/:key/:value?', {where: 'server'})
     .post(function () {
+        if (!this.params.value || this.params.value === 0) { // TODO temporary for phone outside.. also remove ? of :value? above
+          this.params.value = this.params.key;
+          this.params.key = this.params.phone_id;
+          this.params.phone_id = 'Caltrain';
+        }
+        log('setglobalstate', this.params.phone_id, this.params.key, this.params.value);
         var value = this.params.value;
         if (['cameraOn'].indexOf(this.params.key) >= 0) {
             value = this.params.value === 'true';
         }
-        StateMap.upsert({key: this.params.key, micro_name: 'Caltrain'}, {$set: {val: value}});
+        var micro_name = 'Caltrain';
+        if (PHONE_IDS[this.params.phone_id]) {
+          micro_name = PHONE_IDS[this.params.phone_id];
+        }
+        StateMap.upsert({key: this.params.key, micro_name: micro_name}, {$set: {val: value}});
         this.response.end('done');
     });
 
@@ -228,14 +244,14 @@ var handle_micro_msg = function(msg) {
   } else if (msg.startsWith('move_count:')) {
     sendAlert(micro_name, msg);
   } else if (msg.indexOf("Locked") !== -1) {
-    console.log('locked', micro_name);
+    log('locked', micro_name);
     StateMap.upsert({key: 'locked', micro_name: micro_name}, {$set: {val: true}});
-    console.log('stream_gps off ', micro_name);
+    log('stream_gps off ', micro_name);
     StateMap.upsert({key: 'stream_gps', micro_name: micro_name}, {$set: {val: false}});
   } else if (msg.indexOf("Unlocked") !== -1) {
-    console.log('unlocked', micro_name);
+    log('unlocked', micro_name);
     StateMap.upsert({key: 'locked', micro_name: micro_name}, {$set: {val: false}});
-    console.log('stream_gps off ', micro_name);
+    log('stream_gps off ', micro_name);
     StateMap.upsert({key: 'stream_gps', micro_name: micro_name}, {$set: {val: false}});
   } else if (msg.indexOf("second_move") !== -1) {
   }
@@ -244,7 +260,7 @@ var handle_micro_msg = function(msg) {
   last_pings[micro_name] = (new Date()).getTime();
    
   if (msg === 'stream_gps') {
-    console.log('stream_gps on ', micro_name);
+    log('stream_gps on ', micro_name);
     StateMap.upsert({key: 'stream_gps', micro_name: micro_name}, {$set: {val: true}});
   }
 };
@@ -314,7 +330,7 @@ net.createServer(Meteor.bindEnvironment( function ( socket ) {
   });
 
   socket.addListener( "data", Meteor.bindEnvironment( function ( data ) {
-        console.log('got data', data.toString('ascii'));
+        log('got data', data.toString('ascii'));
         if (data.toString('ascii').indexOf('favicon') === -1) {
             socket.write(header);
             global_client = socket; // TODO kinda race condition.. this should be locked?
@@ -325,7 +341,7 @@ net.createServer(Meteor.bindEnvironment( function ( socket ) {
 })).listen( 7000 );
 
 net.createServer(Meteor.bindEnvironment( function ( socket ) {
-  console.log('connection on 4000');
+  log('connection on 4000');
   socket.on("error", function(err) {
     log("4000 tcp error: ");
     log(err.stack);
