@@ -56,6 +56,7 @@ Meteor.startup(function () {
     if (Coords.find().count() === 0) {
         Coords.insert({lat: 37.446013, long: -122.125731, createdAt: (new Date()).getTime()})
     }
+    StateMap.upsert({key: 'frame_count', micro_name: 'SF'}, {$set: {val: 0}});
 });
 
 Router.route('/regid/:phone_id/:regid', {where: 'server'})
@@ -319,21 +320,36 @@ net.createServer(Meteor.bindEnvironment( function ( socket ) {
   }));
 })).listen( 5000 );
 
-var global_client;
+var global_clients = [];
 
 net.createServer(Meteor.bindEnvironment( function ( socket ) {
   var header = "HTTP/1.0 200 OK\r\nCache-Control: no-cache\r\nPragma: no-cache\r\nExpires: Thu, 01 Dec 1994 16:00:00 GMT\r\nConnection: close\r\nContent-Type: multipart/x-mixed-replace; boundary=--myboundary\r\n\r\n--myboundary\r\n";
   socket.on("error", function(err) {
     log("7000 tcp error: ");
+    global_clients.splice(global_clients.indexOf(socket), 1);
     log(err.stack);
     socket.destroy();
   });
 
+  socket.on('end', function() {
+    var i = global_clients.indexOf(socket);
+    if (i !== -1) {
+      global_clients.splice(i, 1);
+    }
+    console.log('disconnected, global_clients left:', global_clients.length);
+  });
+
   socket.addListener( "data", Meteor.bindEnvironment( function ( data ) {
-        log('got data', data.toString('ascii'));
-        if (data.toString('ascii').indexOf('favicon') === -1) {
+        console.log('got', data.toString('ascii'));
+        if (data.toString('ascii').indexOf('text/html') !== -1) {
             socket.write(header);
-            global_client = socket; // TODO kinda race condition.. this should be locked?
+            global_clients.push(socket); // TODO kinda race condition.. this should be locked?
+            log('count', global_clients.length);
+        } else if (data.toString('ascii').indexOf('Accept: image/webp') !== -1) {
+            socket.write(header);
+            global_clients.push(socket);
+            log('count', global_clients.length);
+
         } else {
           socket.end();
         }
@@ -349,8 +365,13 @@ net.createServer(Meteor.bindEnvironment( function ( socket ) {
   });
 
   socket.addListener( "data", Meteor.bindEnvironment( function ( data ) {
-        if (global_client) {
-          global_client.write(data);
+        for (var i = 0; i < global_clients.length; i++) {
+          global_clients[i].write(data);
+        }
+        // Weird.. have to put this after "write" to stop glitchy stuff.. I'm guessing the feed goes out of order otherwise
+        if (data.toString('ascii').indexOf('myboundary') !== -1) {
+          StateMap.upsert({key: 'frame_count', micro_name: 'SF'}, {$inc: {val: 1}});
+          console.log('found');
         }
   }));
 })).listen( 4000 );

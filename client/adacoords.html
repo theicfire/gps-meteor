@@ -1,4 +1,5 @@
 <template name="ArduinoListing">
+  <img class="video" src="http://10.1.10.22:7000"/>
   {{#each micro_names}}
     <h2>{{name}}</h2>
     {{>Buttons name}}
@@ -39,7 +40,8 @@
     GPS Streaming: {{stream_gps}}<br/>
     Last SMS: {{lastSMS}}<br/>
     CameraOn: {{cameraOn}}<br/>
-    Ring Status: {{ringStatus}}
+    Ring Status: {{ringStatus}}<br/>
+    Frame Count: {{frame_count}}
 
   </div>
 </template>

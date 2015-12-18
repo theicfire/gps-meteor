@@ -98,7 +98,7 @@ Template.Map.helpers({
     },
     liveview: function() {
         return Session.get('liveview');
-    }
+    },
 });
 
 Template.ArduinoListing.helpers({
@@ -131,6 +131,9 @@ Template.State.helpers({
     var ringStatus = StateMap.findOne({key: 'ringStatus', micro_name: this.toString()});
     return ringStatus ? ringStatus.val : 'None';
   },
+  frame_count: function() {
+    return StateMap.findOne({key: 'frame_count'}).val;
+  }
 });
 
 Router.route('/', function () {
