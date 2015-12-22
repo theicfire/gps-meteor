@@ -215,7 +215,7 @@ var handle_micro_msg = function(msg) {
   }
   log('handling', micro_name, msg);
 
-  if (msg.startsWith('gps:')) {
+  if (msg.indexOf('gps:') !== -1) {
     parts = msg.split(':');
     var coord = {
       lat: parseInt(parts[1]) / 10000.0,
@@ -226,13 +226,13 @@ var handle_micro_msg = function(msg) {
     };
     log('insert', coord);
     Coords.insert(coord);
-  } else if (msg.startsWith('srt:')) {
+  } else if (msg.indexOf('srt:') !== -1) {
     var locked = StateMap.findOne({key: 'locked', micro_name: micro_name});
     if (locked && locked.val) {
       sendAlert(micro_name, 'arduino restarted in lock state!');
     }
     StateMap.upsert({key: 'locked', micro_name: micro_name}, {$set: {val: true}});
-  } else if (msg.startsWith('bat:')) {
+  } else if (msg.indexOf('bat:') !== -1) {
     var parts = msg.split('bat:');
     log(parts);
     parts = parts[1].split('/');
@@ -242,7 +242,7 @@ var handle_micro_msg = function(msg) {
     if (voltage < 3520 && percentage < 17) {
       sendAlert(micro_name, 'undervoltage');
     }
-  } else if (msg.startsWith('move_count:')) {
+  } else if (msg.indexOf('move_count:') !== -1) {
     sendAlert(micro_name, msg);
   } else if (msg.indexOf("Locked") !== -1) {
     log('locked', micro_name);
