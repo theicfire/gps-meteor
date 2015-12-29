@@ -4,12 +4,12 @@ var net = Meteor.npmRequire('net');
 var gcm = Meteor.npmRequire('node-gcm');
 var PushBullet = Meteor.npmRequire('pushbullet');
 var client = Twilio('ACa8b26113996868bf72b7fab2a8ea0361', '47d7dc0b6dc56c2161dc44bc0324bb70');
-var last_pings = {'SF': (new Date()).getTime(), 'Caltrain': (new Date()).getTime()};
-var MICRO_PHONES = {'SF': '+16505465336', 'Caltrain': '+16504417308'};
-var active_phones = ['SF'];
+var last_pings = {'SF': (new Date()).getTime(), 'Caltrain': (new Date()).getTime(), 'Other': (new Date()).getTime()};
+var MICRO_PHONES = {'Caltrain': '+16504417308', 'SF': '+16505465336'};
+var active_phones = ['SF', 'Caltrain', 'Other'];
 var MICRO_PHONES_INVERSE = invert(MICRO_PHONES);
-var MICRO_PHONE_IMEIS = {'5218': 'Caltrain'};
-var PHONE_IDS = {'b1e01101f4a907fd': 'SF', 'noidyet': 'Caltrain'}; // TODO actual id
+var MICRO_PHONE_IMEIS = {'5218': 'Caltrain', '0630': 'SF'};
+var PHONE_IDS = {'noidyet': 'SF', 'b1e01101f4a907fd': 'Caltrain', 'noalso': 'Other'}; // TODO actual id
 var WATCHDOG_TIMEOUT = 1800000;
 var pusher = new PushBullet('oYHlSULc3i998hvbuVtsjlH0ps23l7y2');
 var phone_action_map = {
@@ -56,7 +56,7 @@ Meteor.startup(function () {
     if (Coords.find().count() === 0) {
         Coords.insert({lat: 37.446013, long: -122.125731, createdAt: (new Date()).getTime()})
     }
-    StateMap.upsert({key: 'frame_count', micro_name: 'SF'}, {$set: {val: 0}});
+    StateMap.upsert({key: 'frame_count', micro_name: 'Caltrain'}, {$set: {val: 0}});
 });
 
 Router.route('/regid/:phone_id/:regid', {where: 'server'})
@@ -64,7 +64,7 @@ Router.route('/regid/:phone_id/:regid', {where: 'server'})
         if (!this.params.regid || this.params.regid.length === 0) { // TODO temporary, for my not-updated android phone
           return;
         }
-        var micro_name = 'SF';
+        var micro_name = 'Caltrain';
         if (PHONE_IDS[this.params.phone_id]) {
           micro_name = PHONE_IDS[this.params.phone_id];
         }
@@ -207,7 +207,7 @@ Router.route('/setGlobalState/:phone_id/:key/:value?', {where: 'server'})
 var handle_micro_msg = function(msg) {
   msg = msg.trim();
 
-  var micro_name = 'SF';
+  var micro_name = 'Other';
   var possible_imei = MICRO_PHONE_IMEIS[msg.substr(0, 4)];
   if (possible_imei) {
     micro_name = possible_imei;
@@ -339,13 +339,13 @@ net.createServer(Meteor.bindEnvironment( function ( socket ) {
     console.log('disconnected, global_clients left:', global_clients.length);
   });
 
-  socket.addListener( "data", Meteor.bindEnvironment( function ( data ) {
+  socket.addListener("data", Meteor.bindEnvironment(function(data) {
         console.log('got', data.toString('ascii'));
         if (data.toString('ascii').indexOf('text/html') !== -1) {
             socket.write(header);
             global_clients.push(socket); // TODO kinda race condition.. this should be locked?
             log('count', global_clients.length);
-        } else if (data.toString('ascii').indexOf('Accept: image/webp') !== -1) {
+        } else if (data.toString('ascii').indexOf('Accept: image/webp') !== -1 || data.toString('ascii').indexOf('curl') !== -1) {
             socket.write(header);
             global_clients.push(socket);
             log('count', global_clients.length);
@@ -358,6 +358,11 @@ net.createServer(Meteor.bindEnvironment( function ( socket ) {
 
 net.createServer(Meteor.bindEnvironment( function ( socket ) {
   log('connection on 4000');
+  var recording_name = (new Date()).toISOString() + '.vid';
+  socket.on('end', function () {
+    console.log('streaming connection closed');
+  });
+
   socket.on("error", function(err) {
     log("4000 tcp error: ");
     log(err.stack);
@@ -369,10 +374,8 @@ net.createServer(Meteor.bindEnvironment( function ( socket ) {
           global_clients[i].write(data);
         }
         // Weird.. have to put this after "write" to stop glitchy stuff.. I'm guessing the feed goes out of order otherwise
-        if (data.toString('ascii').indexOf('myboundary') !== -1) {
-          StateMap.upsert({key: 'frame_count', micro_name: 'SF'}, {$inc: {val: 1}});
-          console.log('found');
-        }
+        // could keep the file open if that's usefully faster
+        fs.appendFileSync('/Users/chase/Dropbox/boosted/gps-meteor/' + recording_name, data);
   }));
 })).listen( 4000 );
 
@@ -383,3 +386,52 @@ function invert(o) {
   });
   return ret;
 }
+
+// play back raw recording, without going frame by frame
+      //var increment = 10000;
+      //var interval = Meteor.setInterval(function() {
+          //if (file_data.length <= loc + increment) {
+            //console.log('done');
+            //Meteor.clearInterval(interval);
+            //socket.end();
+            //return;
+          //}
+          //if (alive) {
+            //console.log('write', loc);
+            //socket.write(file_data.slice(loc, loc + increment));
+            //loc += increment;
+          //} else {
+            //Meteor.clearInterval(interval);
+            //socket.end();
+            //return;
+          //}
+        //}, 10);
+        //
+        //
+        //
+
+// recording frame by frame
+        //if (data.toString('ascii').indexOf('myboundary') !== -1) {
+          //StateMap.upsert({key: 'frame_count', micro_name: 'Caltrain'}, {$inc: {val: 1}});
+          //console.log('found');
+        //}
+        //if (CameraFrames.find().count() < 50) {
+          //cur_frame = Buffer.concat([cur_frame, data]);
+          //console.log('part of frame inserted');
+          //var sr = cur_frame.toString('binary');
+          //if (sr.indexOf('--myboundary') !== -1) {
+            //var first = sr.substr(0, sr.indexOf('--myboundary') + '--myboundary'.length + 2);
+            //var second = sr.substr(sr.indexOf('--myboundary') + '--myboundary'.length + 2);
+            //if (global_frame_count > 1) {
+              //CameraFrames.insert({timestamp: (new Date()).getTime(), img: first});
+            //}
+            //console.log('added full frame', first.length);
+            //cur_frame = new Buffer(second);
+            //console.log(cur_frame.slice(40, 200).toString('utf8'));
+            //console.log(cur_frame.slice(40, 200));
+          //}
+          ////console.log(data.slice(0, 200).toString('utf8'));
+          //global_frame_count += 1;
+          ////console.log('insert', global_frame_count);
+          ////CameraFrames.insert({timestamp: (new Date()).getTime(), img: global_frame_count});
+        //}
