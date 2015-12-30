@@ -141,7 +141,7 @@ var sendAlert = function(micro_name, msg) {
   }
   var CHASE_PHONE = '+15125778778';
   msg = (new Date()).toISOString() + ' ' + micro_name + ' Alert: ' + msg;
-  sendPushbullet(msg, '', 'nexus4chase');
+  sendPushbullet(msg, '', 'nexus4bike');
   sendPushbullet(msg, '', 'iphoneoliver');
   sendSMS(CHASE_PHONE, msg);
 };
