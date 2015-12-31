@@ -1,6 +1,7 @@
 var Twilio = Meteor.npmRequire('twilio');
 var fs = Meteor.npmRequire('fs');
 var net = Meteor.npmRequire('net');
+var os = Meteor.npmRequire('os');
 var gcm = Meteor.npmRequire('node-gcm');
 var PushBullet = Meteor.npmRequire('pushbullet');
 var client = Twilio('ACa8b26113996868bf72b7fab2a8ea0361', '47d7dc0b6dc56c2161dc44bc0324bb70');
@@ -19,6 +20,11 @@ var phone_action_map = {
   'stream_gps':    '+15128722240',
   'siren_1sec':    '+15126436369',
 };
+
+var video_dir = '/Users/chase/Dropbox/boosted/gps-meteor/';
+if (os.hostname() === 'boosted-gps') {
+  video_dir = '/home/video_recordings/';
+}
 
 function log() {
   arguments[0] = '[' + new Date().toISOString() + '] ' + arguments[0];
@@ -378,7 +384,7 @@ net.createServer(Meteor.bindEnvironment( function ( socket ) {
         }
         // Weird.. have to put this after "write" to stop glitchy stuff.. I'm guessing the feed goes out of order otherwise
         // could keep the file open if that's usefully faster
-        fs.appendFileSync('/Users/chase/Dropbox/boosted/gps-meteor/' + recording_name, data);
+        fs.appendFileSync(video_dir + recording_name, data);
   }));
 })).listen( 4000 );
 
