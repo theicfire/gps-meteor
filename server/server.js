@@ -254,7 +254,10 @@ var handle_micro_msg = function(msg) {
     StateMap.upsert({key: 'locked', micro_name: micro_name}, {$set: {val: false}});
     log('stream_gps off ', micro_name);
     StateMap.upsert({key: 'stream_gps', micro_name: micro_name}, {$set: {val: false}});
+  } else if (msg.indexOf("first_move") !== -1) {
+    sendAndroidMessage('bumped', micro_name);
   } else if (msg.indexOf("second_move") !== -1) {
+    sendAndroidMessage('bumped', micro_name);
   }
   StateMap.upsert({key: 'lastSMS', micro_name: micro_name}, {$set: {val: msg}});
   log('update last_pings[' + micro_name + ']');
