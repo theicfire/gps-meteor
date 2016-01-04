@@ -125,7 +125,11 @@ Template.State.helpers({
   },
   cameraOn: function () {
     var cameraOn = StateMap.findOne({key: 'cameraOn', micro_name: this.toString()});
-    return cameraOn ? cameraOn.val.toString() : 'None';
+    return cameraOn && cameraOn.val ? 'ON' : 'OFF';
+  },
+  cameraBat: function () {
+    var bat = StateMap.findOne({key: 'bat', micro_name: this.toString()});
+    return bat ? bat.val : 'None';
   },
   ringStatus: function() {
     var ringStatus = StateMap.findOne({key: 'ringStatus', micro_name: this.toString()});
