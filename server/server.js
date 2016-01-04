@@ -250,6 +250,7 @@ var handle_micro_msg = function(msg) {
     }
   } else if (msg.indexOf('move_count:') !== -1) {
     sendAlert(micro_name, msg);
+    sendAndroidMessage('bumped', micro_name);
   } else if (msg.indexOf("Locked") !== -1) {
     log('locked', micro_name);
     StateMap.upsert({key: 'locked', micro_name: micro_name}, {$set: {val: true}});
