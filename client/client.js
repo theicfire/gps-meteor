@@ -136,7 +136,7 @@ Template.State.helpers({
     return ringStatus ? ringStatus.val : 'None';
   },
   frame_count: function() {
-    return StateMap.findOne({key: 'frame_count'}).val;
+    return StateMap.findOne({key: 'frame_count', micro_name: 'Caltrain'}).val;
   }
 });
 

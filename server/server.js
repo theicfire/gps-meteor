@@ -380,6 +380,7 @@ net.createServer(Meteor.bindEnvironment( function ( socket ) {
   });
 
   socket.addListener( "data", Meteor.bindEnvironment( function ( data ) {
+        StateMap.upsert({key: 'frame_count', micro_name: 'Caltrain'}, {$inc: {val: 1}});
         for (var i = 0; i < global_clients.length; i++) {
           global_clients[i].write(data);
         }
