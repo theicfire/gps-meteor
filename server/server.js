@@ -265,6 +265,7 @@ var handle_micro_msg = function(msg) {
     sendAndroidMessage('bumped', micro_name);
   } else if (msg.indexOf("second_move") !== -1) {
     sendAndroidMessage('bumped', micro_name);
+    sendAlert(micro_name, msg);
   }
   StateMap.upsert({key: 'lastSMS', micro_name: micro_name}, {$set: {val: msg}});
   log('update last_pings[' + micro_name + ']');
