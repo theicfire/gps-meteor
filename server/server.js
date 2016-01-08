@@ -13,7 +13,7 @@ var MICRO_PHONES_INVERSE = invert(MICRO_PHONES);
 var MICRO_PHONE_IMEIS = {'5218': 'Caltrain', '0630': 'SF'};
 var PHONE_IDS = {'b1e01101f4a907fd': 'SF', 'd8c62546300cdda1': 'Caltrain', 'noalso': 'Other'}; // TODO actual id
 var MICRO_WATCHDOG_TIMEOUT = 1800000;
-var PHONE_WATCHDOG_TIMEOUT = 60000;
+var PHONE_WATCHDOG_TIMEOUT = 600000;
 var pusher = new PushBullet('oYHlSULc3i998hvbuVtsjlH0ps23l7y2');
 var phone_action_map = {
   'lock':   '+15126435858',
