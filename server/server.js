@@ -34,6 +34,7 @@ function log() {
 }
 
 var sendAndroidMessage = function(msg, micro_name) {
+    console.log('sendAndroidMessage', msg, micro_name);
     var regid = Regid.findOne({micro_name: micro_name});
     if (!regid) {
         console.error("Nothing registered");
@@ -55,7 +56,7 @@ var sendAndroidMessage = function(msg, micro_name) {
 
     sender.send(message, registrationIds, 5, function(err, result) {
       if(err) console.error(err);
-      else    log(result);
+      else    log('sendAndroidMessage res', result);
     });
 }
 
@@ -65,6 +66,8 @@ Meteor.startup(function () {
         Coords.insert({lat: 37.446013, long: -122.125731, createdAt: (new Date()).getTime()})
     }
     StateMap.upsert({key: 'frame_count', micro_name: 'Caltrain'}, {$set: {val: 0}});
+    StateMap.update({key: 'phone_watchdog_waiting'}, {$set: {val: false}});
+    StateMap.update({key: 'phone_watchdog_on'}, {$set: {val: false}});
 });
 
 Router.route('/regid/:phone_id/:regid', {where: 'server'})
@@ -168,6 +171,7 @@ Meteor.methods({
     togglePhoneWatchdog: function(micro_name) {
       var on = StateMap.findOne({key: 'phone_watchdog_on', micro_name: micro_name});
       StateMap.upsert({key: 'phone_watchdog_on', micro_name: micro_name}, {$set: {val: !on || !on.val}});
+      phone_last_pings[micro_name] = (new Date()).getTime();
     },
 });
 
@@ -248,9 +252,7 @@ var handle_micro_msg = function(msg) {
     StateMap.upsert({key: 'locked', micro_name: micro_name}, {$set: {val: true}});
   } else if (msg.indexOf('bat:') !== -1) {
     var parts = msg.split('bat:');
-    log(parts);
     parts = parts[1].split('/');
-    log(parts);
     var voltage = parseInt(parts[0]);
     var percentage = parseInt(parts[1]);
     if (voltage < 3520 && percentage < 17) {
@@ -375,7 +377,7 @@ net.createServer(Meteor.bindEnvironment( function ( socket ) {
   socket.on("error", function(err) {
     log("3001 tcp error: ");
     global_clients.splice(global_clients.indexOf(socket), 1);
-    log(err.stack);
+    log('stack', err.stack);
     socket.destroy();
   });
 
@@ -413,7 +415,7 @@ net.createServer(Meteor.bindEnvironment( function ( socket ) {
 
   socket.on("error", function(err) {
     log("4000 tcp error: ");
-    log(err.stack);
+    log('stack', err.stack);
     socket.destroy();
   });
 
