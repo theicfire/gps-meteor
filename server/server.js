@@ -149,6 +149,7 @@ var sendAlert = function(micro_name, msg) {
   }
   var CHASE_PHONE = '+15125778778';
   msg = (new Date()).toISOString() + ' ' + micro_name + ' Alert: ' + msg;
+  console.log('sendAlert:', msg);
   sendPushbullet(msg, '', 'nexus4bike');
   sendPushbullet(msg, '', 'iphoneoliver');
   sendSMS(CHASE_PHONE, msg);
@@ -205,7 +206,7 @@ Router.route('/setGlobalState/:phone_id/:key/:value?', {where: 'server'})
         }
         log('setglobalstate', this.params.phone_id, this.params.key, this.params.value);
         var value = this.params.value;
-        if (['cameraOn'].indexOf(this.params.key) >= 0) {
+        if (['cameraOn', 'phoneResponded'].indexOf(this.params.key) >= 0) {
             value = this.params.value === 'true';
         }
         var micro_name = 'Caltrain';
@@ -329,13 +330,26 @@ Meteor.setInterval(function() {
 
     Object.keys(phone_last_pings).forEach(function (micro_name) {
       var on = StateMap.findOne({key: 'phone_watchdog_on', micro_name: micro_name});
+      var waiting = StateMap.findOne({key: 'phone_watchdog_waiting', micro_name: micro_name});
       if (!on || !on.val) {
         return;
       }
+      if (waiting && waiting.val) {
+        return;
+      }
       if (phone_last_pings[micro_name] + PHONE_WATCHDOG_TIMEOUT < (new Date()).getTime()) {
-        log('phone watchdog too old for', micro_name + ':', phone_last_pings[micro_name], (new Date()).getTime());
-        sendAlert(micro_name, 'phone watchdog expired!');
-        StateMap.update(on._id, {$set: {val: false}});
+        sendAndroidMessage('alive_check', micro_name);
+        StateMap.upsert({key: 'phone_watchdog_waiting', micro_name: micro_name}, {$set: {val: true}});
+        StateMap.upsert({key: 'phoneResponded', micro_name: micro_name}, {val: false});
+        Meteor.setTimeout(function() {
+            var pingResponse = StateMap.findOne({key: 'phoneResponded', micro_name: micro_name});
+            if (!pingResponse || !pingResponse.val) {
+              sendAlert(micro_name, 'phone did not respond!');
+              StateMap.update(on._id, {$set: {val: false}});
+              StateMap.upsert({key: 'phone_watchdog_on', micro_name: micro_name}, {$set: {val: false}});
+            }
+            StateMap.upsert({key: 'phone_watchdog_waiting', micro_name: micro_name}, {$set: {val: false}});
+          }, 10000);
       } else {
         log('phone interval for', micro_name, '=', (new Date()).getTime() - phone_last_pings[micro_name]);
       }
