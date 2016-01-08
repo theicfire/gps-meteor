@@ -13,7 +13,7 @@ var MICRO_PHONES_INVERSE = invert(MICRO_PHONES);
 var MICRO_PHONE_IMEIS = {'5218': 'Caltrain', '0630': 'SF'};
 var PHONE_IDS = {'b1e01101f4a907fd': 'SF', 'd8c62546300cdda1': 'Caltrain', 'noalso': 'Other'}; // TODO actual id
 var MICRO_WATCHDOG_TIMEOUT = 1800000;
-var PHONE_WATCHDOG_TIMEOUT = 600000;
+var PHONE_WATCHDOG_TIMEOUT = 60000;
 var pusher = new PushBullet('oYHlSULc3i998hvbuVtsjlH0ps23l7y2');
 var phone_action_map = {
   'lock':   '+15126435858',
@@ -66,7 +66,6 @@ Meteor.startup(function () {
         Coords.insert({lat: 37.446013, long: -122.125731, createdAt: (new Date()).getTime()})
     }
     StateMap.upsert({key: 'frame_count', micro_name: 'Caltrain'}, {$set: {val: 0}});
-    StateMap.update({key: 'phone_watchdog_waiting'}, {$set: {val: false}});
     StateMap.update({key: 'phone_watchdog_on'}, {$set: {val: false}});
 });
 
@@ -210,7 +209,7 @@ Router.route('/setGlobalState/:phone_id/:key/:value?', {where: 'server'})
         }
         log('setglobalstate', this.params.phone_id, this.params.key, this.params.value);
         var value = this.params.value;
-        if (['cameraOn', 'phoneResponded'].indexOf(this.params.key) >= 0) {
+        if (['cameraOn'].indexOf(this.params.key) >= 0) {
             value = this.params.value === 'true';
         }
         var micro_name = 'Caltrain';
@@ -315,6 +314,7 @@ Router.route('/call_completed', {where: 'server'})
       this.response.end();
   });
 
+var phoneWatchdogWaiting = false;
 Meteor.setInterval(function() {
     Object.keys(micro_last_pings).forEach(function (micro_name) {
       var locked = StateMap.findOne({key: 'locked', micro_name: micro_name});
@@ -332,25 +332,22 @@ Meteor.setInterval(function() {
 
     Object.keys(phone_last_pings).forEach(function (micro_name) {
       var on = StateMap.findOne({key: 'phone_watchdog_on', micro_name: micro_name});
-      var waiting = StateMap.findOne({key: 'phone_watchdog_waiting', micro_name: micro_name});
       if (!on || !on.val) {
         return;
       }
-      if (waiting && waiting.val) {
+      if (phoneWatchdogWaiting) {
         return;
       }
       if (phone_last_pings[micro_name] + PHONE_WATCHDOG_TIMEOUT < (new Date()).getTime()) {
         sendAndroidMessage('alive_check', micro_name);
-        StateMap.upsert({key: 'phone_watchdog_waiting', micro_name: micro_name}, {$set: {val: true}});
-        StateMap.upsert({key: 'phoneResponded', micro_name: micro_name}, {val: false});
+        phoneWatchdogWaiting = true;
         Meteor.setTimeout(function() {
-            var pingResponse = StateMap.findOne({key: 'phoneResponded', micro_name: micro_name});
-            if (!pingResponse || !pingResponse.val) {
+            if (phone_last_pings[micro_name] + PHONE_WATCHDOG_TIMEOUT < (new Date()).getTime()) {
               sendAlert(micro_name, 'phone did not respond!');
               StateMap.update(on._id, {$set: {val: false}});
               StateMap.upsert({key: 'phone_watchdog_on', micro_name: micro_name}, {$set: {val: false}});
             }
-            StateMap.upsert({key: 'phone_watchdog_waiting', micro_name: micro_name}, {$set: {val: false}});
+            phoneWatchdogWaiting = false;
           }, 10000);
       } else {
         log('phone interval for', micro_name, '=', (new Date()).getTime() - phone_last_pings[micro_name]);
