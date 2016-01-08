@@ -5,13 +5,15 @@ var os = Meteor.npmRequire('os');
 var gcm = Meteor.npmRequire('node-gcm');
 var PushBullet = Meteor.npmRequire('pushbullet');
 var client = Twilio('ACa8b26113996868bf72b7fab2a8ea0361', '47d7dc0b6dc56c2161dc44bc0324bb70');
-var last_pings = {'SF': (new Date()).getTime(), 'Caltrain': (new Date()).getTime(), 'Other': (new Date()).getTime()};
+var micro_last_pings = {'SF': (new Date()).getTime(), 'Caltrain': (new Date()).getTime()};
+var phone_last_pings = {'SF': (new Date()).getTime(), 'Caltrain': (new Date()).getTime()};
 var MICRO_PHONES = {'Caltrain': '+16504417308', 'SF': '+16505465336'};
 var active_phones = ['SF', 'Caltrain', 'Other'];
 var MICRO_PHONES_INVERSE = invert(MICRO_PHONES);
 var MICRO_PHONE_IMEIS = {'5218': 'Caltrain', '0630': 'SF'};
 var PHONE_IDS = {'b1e01101f4a907fd': 'SF', 'd8c62546300cdda1': 'Caltrain', 'noalso': 'Other'}; // TODO actual id
-var WATCHDOG_TIMEOUT = 1800000;
+var MICRO_WATCHDOG_TIMEOUT = 1800000;
+var PHONE_WATCHDOG_TIMEOUT = 600000;
 var pusher = new PushBullet('oYHlSULc3i998hvbuVtsjlH0ps23l7y2');
 var phone_action_map = {
   'lock':   '+15126435858',
@@ -162,6 +164,10 @@ Meteor.methods({
       sendRing(MICRO_PHONES[micro_name], from_number);
     },
     sendAndroidMessage: sendAndroidMessage,
+    togglePhoneWatchdog: function(micro_name) {
+      var on = StateMap.findOne({key: 'phone_watchdog_on', micro_name: micro_name});
+      StateMap.upsert({key: 'phone_watchdog_on', micro_name: micro_name}, {$set: {val: !on || !on.val}});
+    },
 });
 
 
@@ -207,6 +213,7 @@ Router.route('/setGlobalState/:phone_id/:key/:value?', {where: 'server'})
           micro_name = PHONE_IDS[this.params.phone_id];
         }
         StateMap.upsert({key: this.params.key, micro_name: micro_name}, {$set: {val: value}});
+        phone_last_pings[micro_name] = (new Date()).getTime();
         this.response.end('done');
     });
 
@@ -256,11 +263,13 @@ var handle_micro_msg = function(msg) {
     StateMap.upsert({key: 'locked', micro_name: micro_name}, {$set: {val: true}});
     log('stream_gps off ', micro_name);
     StateMap.upsert({key: 'stream_gps', micro_name: micro_name}, {$set: {val: false}});
+    StateMap.upsert({key: 'phone_watchdog_on', micro_name: micro_name}, {$set: {val: true}});
   } else if (msg.indexOf("Unlocked") !== -1) {
     log('unlocked', micro_name);
     StateMap.upsert({key: 'locked', micro_name: micro_name}, {$set: {val: false}});
     log('stream_gps off ', micro_name);
     StateMap.upsert({key: 'stream_gps', micro_name: micro_name}, {$set: {val: false}});
+    StateMap.upsert({key: 'phone_watchdog_on', micro_name: micro_name}, {$set: {val: false}});
   } else if (msg.indexOf("first_move") !== -1) {
     sendAndroidMessage('bumped', micro_name);
   } else if (msg.indexOf("second_move") !== -1) {
@@ -268,8 +277,8 @@ var handle_micro_msg = function(msg) {
     sendAlert(micro_name, msg);
   }
   StateMap.upsert({key: 'lastSMS', micro_name: micro_name}, {$set: {val: msg}});
-  log('update last_pings[' + micro_name + ']');
-  last_pings[micro_name] = (new Date()).getTime();
+  log('update micro_last_pings[' + micro_name + ']');
+  micro_last_pings[micro_name] = (new Date()).getTime();
    
   if (msg === 'stream_gps') {
     log('stream_gps on ', micro_name);
@@ -304,17 +313,31 @@ Router.route('/call_completed', {where: 'server'})
   });
 
 Meteor.setInterval(function() {
-    Object.keys(last_pings).forEach(function (micro_name) {
+    Object.keys(micro_last_pings).forEach(function (micro_name) {
       var locked = StateMap.findOne({key: 'locked', micro_name: micro_name});
       if (!locked || !locked.val) {
         return;
       }
-      if (last_pings[micro_name] + WATCHDOG_TIMEOUT < (new Date()).getTime()) {
-        log('watchdog too old for', micro_name + ':', last_pings[micro_name], (new Date()).getTime());
-        sendAlert(micro_name, 'watchdog expired!');
+      if (micro_last_pings[micro_name] + MICRO_WATCHDOG_TIMEOUT < (new Date()).getTime()) {
+        log('micro watchdog too old for', micro_name + ':', micro_last_pings[micro_name], (new Date()).getTime());
+        sendAlert(micro_name, 'micro watchdog expired!');
         StateMap.update(locked._id, {$set: {val: false}});
       } else {
-        log('interval', (new Date()).getTime() - last_pings[micro_name]);
+        log('micro interval for', micro_name, '=', (new Date()).getTime() - micro_last_pings[micro_name]);
+      }
+    });
+
+    Object.keys(phone_last_pings).forEach(function (micro_name) {
+      var on = StateMap.findOne({key: 'phone_watchdog_on', micro_name: micro_name});
+      if (!on || !on.val) {
+        return;
+      }
+      if (phone_last_pings[micro_name] + PHONE_WATCHDOG_TIMEOUT < (new Date()).getTime()) {
+        log('phone watchdog too old for', micro_name + ':', phone_last_pings[micro_name], (new Date()).getTime());
+        sendAlert(micro_name, 'phone watchdog expired!');
+        StateMap.update(on._id, {$set: {val: false}});
+      } else {
+        log('phone interval for', micro_name, '=', (new Date()).getTime() - phone_last_pings[micro_name]);
       }
     });
 }, 2000);
@@ -336,7 +359,7 @@ var global_clients = [];
 net.createServer(Meteor.bindEnvironment( function ( socket ) {
   var header = "HTTP/1.0 200 OK\r\nCache-Control: no-cache\r\nPragma: no-cache\r\nExpires: Thu, 01 Dec 1994 16:00:00 GMT\r\nConnection: close\r\nContent-Type: multipart/x-mixed-replace; boundary=--myboundary\r\n\r\n--myboundary\r\n";
   socket.on("error", function(err) {
-    log("7000 tcp error: ");
+    log("3001 tcp error: ");
     global_clients.splice(global_clients.indexOf(socket), 1);
     log(err.stack);
     socket.destroy();
@@ -365,7 +388,7 @@ net.createServer(Meteor.bindEnvironment( function ( socket ) {
           socket.end();
         }
   }));
-})).listen( 7000 );
+})).listen( 3001 );
 
 net.createServer(Meteor.bindEnvironment( function ( socket ) {
   log('connection on 4000');

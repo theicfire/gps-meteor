@@ -56,7 +56,10 @@ Template.Buttons.events({
     'click .gcm-button': function(event) {
       console.log('send', event.target.innerHTML);
       Meteor.call('sendAndroidMessage', event.target.innerHTML, this.toString());
-    }
+    },
+    'click .phone-watchdog-button': function(event) {
+      Meteor.call('togglePhoneWatchdog', this.toString());
+    },
 });
 
 
@@ -102,9 +105,9 @@ Template.Map.helpers({
 });
 
 Template.ArduinoListing.helpers({
-    coords: function() {
-      return Coords.find({from_arduino: true});
-    },
+  coords: function() {
+    return Coords.find({from_arduino: true});
+  },
   micro_names: function() {
     return [{'name': 'SF'}, {'name': 'Caltrain'}];
   }
@@ -127,6 +130,10 @@ Template.State.helpers({
     var cameraOn = StateMap.findOne({key: 'cameraOn', micro_name: this.toString()});
     return cameraOn && cameraOn.val ? 'ON' : 'OFF';
   },
+  phoneWatchdogOn: function () {
+    var on = StateMap.findOne({key: 'phone_watchdog_on', micro_name: this.toString()});
+    return on && on.val ? 'ON' : 'OFF';
+  },
   cameraBat: function () {
     var bat = StateMap.findOne({key: 'bat', micro_name: this.toString()});
     return bat ? bat.val : 'None';
@@ -136,7 +143,11 @@ Template.State.helpers({
     return ringStatus ? ringStatus.val : 'None';
   },
   frame_count: function() {
-    return StateMap.findOne({key: 'frame_count', micro_name: 'Caltrain'}).val;
+    var frame_count = StateMap.findOne({key: 'frame_count', micro_name: 'Caltrain'});
+    if (frame_count) {
+      return frame_count.val;
+    }
+    return 'None';
   }
 });
 

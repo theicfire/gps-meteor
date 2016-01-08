@@ -1,6 +1,6 @@
 <template name="ArduinoListing">
-  <!--<img class="video" src="http://gps.chaselambda.com:7000"/>-->
-  <a href="http://gps.chaselambda.com:7000">Live Stream</a>
+  <!--<img class="video" src="http://gps.chaselambda.com:3001"/>-->
+  <a href="http://gps.chaselambda.com:3001">Live Stream</a>
   {{#each micro_names}}
     <h2>{{name}}</h2>
     {{>Buttons name}}
@@ -21,7 +21,7 @@
 
 <template name="Buttons">
   <div>
-    SMS:
+    Send Micro Message:
   <button class="sms-button">stream_gps</button>
   <button class="sms-button">lock</button>
   <button class="sms-button">unlock</button>
@@ -29,9 +29,14 @@
   <button class="sms-button">siren_1sec</button>
   </div>
   <div>
+    Send Phone Message:
     <button class="gcm-button">camera_on</button>
     <button class="gcm-button">camera_off</button>
     <button class="gcm-button">bumped</button>
+  </div>
+  <div>
+    Phone Settings:
+    <button class="phone-watchdog-button">Toggle Watchdog</button>
   </div>
 
 </template>
@@ -42,6 +47,7 @@
     GPS Streaming: {{stream_gps}}<br/>
     Last SMS: {{lastSMS}}<br/>
     Phone Camera: {{cameraOn}}<br/>
+    Phone Watchdog: {{phoneWatchdogOn}}<br/>
     Phone Battery: {{cameraBat}}<br/>
     Ring Status: {{ringStatus}}<br/>
     Data Count: {{frame_count}}
