@@ -217,7 +217,9 @@ Router.route('/setGlobalState/:phone_id/:key/:value?', {where: 'server'})
           micro_name = PHONE_IDS[this.params.phone_id];
         }
         StateMap.upsert({key: this.params.key, micro_name: micro_name}, {$set: {val: value}});
-        phone_last_pings[micro_name] = (new Date()).getTime();
+        if (this.params.key === 'bat') {
+          phone_last_pings[micro_name] = (new Date()).getTime();
+        }
         this.response.end('done');
     });
 
