@@ -170,7 +170,7 @@ Meteor.methods({
     togglePhoneWatchdog: function(micro_name) {
       var on = StateMap.findOne({key: 'phone_watchdog_on', micro_name: micro_name});
       StateMap.upsert({key: 'phone_watchdog_on', micro_name: micro_name}, {$set: {val: !on || !on.val}});
-      phone_last_pings[micro_name] = (new Date()).getTime();
+      phone_last_pings[micro_name] = 0;
     },
 });
 
