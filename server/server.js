@@ -34,7 +34,7 @@ function log() {
 }
 
 var sendAndroidMessage = function(msg, micro_name) {
-    console.log('sendAndroidMessage', msg, micro_name);
+    log('sendAndroidMessage', msg, micro_name);
     var regid = Regid.findOne({micro_name: micro_name});
     if (!regid) {
         console.error("Nothing registered");
@@ -151,7 +151,7 @@ var sendAlert = function(micro_name, msg) {
   }
   var CHASE_PHONE = '+15125778778';
   msg = (new Date()).toISOString() + ' ' + micro_name + ' Alert: ' + msg;
-  console.log('sendAlert:', msg);
+  log('sendAlert:', msg);
   sendPushbullet(msg, '', 'nexus4bike');
   sendPushbullet(msg, '', 'iphoneoliver');
   sendSMS(CHASE_PHONE, msg);
@@ -385,11 +385,11 @@ net.createServer(Meteor.bindEnvironment( function ( socket ) {
     if (i !== -1) {
       global_clients.splice(i, 1);
     }
-    console.log('disconnected, global_clients left:', global_clients.length);
+    log('disconnected, global_clients left:', global_clients.length);
   });
 
   socket.addListener("data", Meteor.bindEnvironment(function(data) {
-        console.log('got', data.toString('ascii'));
+        log('got', data.toString('ascii'));
         if (data.toString('ascii').indexOf('text/html') !== -1) {
             socket.write(header);
             global_clients.push(socket); // TODO kinda race condition.. this should be locked?
@@ -409,7 +409,7 @@ net.createServer(Meteor.bindEnvironment( function ( socket ) {
   log('connection on 4000');
   var recording_name = (new Date()).toISOString() + '.vid';
   socket.on('end', function () {
-    console.log('streaming connection closed');
+    log('streaming connection closed');
   });
 
   socket.on("error", function(err) {
@@ -441,13 +441,13 @@ function invert(o) {
       //var increment = 10000;
       //var interval = Meteor.setInterval(function() {
           //if (file_data.length <= loc + increment) {
-            //console.log('done');
+            //log('done');
             //Meteor.clearInterval(interval);
             //socket.end();
             //return;
           //}
           //if (alive) {
-            //console.log('write', loc);
+            //log('write', loc);
             //socket.write(file_data.slice(loc, loc + increment));
             //loc += increment;
           //} else {
@@ -463,11 +463,11 @@ function invert(o) {
 // recording frame by frame
         //if (data.toString('ascii').indexOf('myboundary') !== -1) {
           //StateMap.upsert({key: 'frame_count', micro_name: 'Caltrain'}, {$inc: {val: 1}});
-          //console.log('found');
+          //log('found');
         //}
         //if (CameraFrames.find().count() < 50) {
           //cur_frame = Buffer.concat([cur_frame, data]);
-          //console.log('part of frame inserted');
+          //log('part of frame inserted');
           //var sr = cur_frame.toString('binary');
           //if (sr.indexOf('--myboundary') !== -1) {
             //var first = sr.substr(0, sr.indexOf('--myboundary') + '--myboundary'.length + 2);
@@ -475,13 +475,13 @@ function invert(o) {
             //if (global_frame_count > 1) {
               //CameraFrames.insert({timestamp: (new Date()).getTime(), img: first});
             //}
-            //console.log('added full frame', first.length);
+            //log('added full frame', first.length);
             //cur_frame = new Buffer(second);
-            //console.log(cur_frame.slice(40, 200).toString('utf8'));
-            //console.log(cur_frame.slice(40, 200));
+            //log(cur_frame.slice(40, 200).toString('utf8'));
+            //log(cur_frame.slice(40, 200));
           //}
-          ////console.log(data.slice(0, 200).toString('utf8'));
+          ////log(data.slice(0, 200).toString('utf8'));
           //global_frame_count += 1;
-          ////console.log('insert', global_frame_count);
+          ////log('insert', global_frame_count);
           ////CameraFrames.insert({timestamp: (new Date()).getTime(), img: global_frame_count});
         //}
