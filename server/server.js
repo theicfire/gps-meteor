@@ -33,6 +33,11 @@ function log() {
   console.log.apply(this, arguments);
 }
 
+function loge() {
+  arguments[0] = 'Error: ' + arguments[0];
+  log.apply(this, arguments);
+}
+
 var sendAndroidMessage = function(msg, micro_name) {
     log('sendAndroidMessage', msg, micro_name);
     var regid = Regid.findOne({micro_name: micro_name});
@@ -55,13 +60,16 @@ var sendAndroidMessage = function(msg, micro_name) {
     var registrationIds = [regid.regid];
 
     sender.send(message, registrationIds, 5, function(err, result) {
-      if(err) console.error(err);
-      else    log('sendAndroidMessage res', result);
+      if (err) {
+        loge('sendAndroidMessag', err);
+      } else {
+        log('sendAndroidMessage success');
+      }
     });
 }
 
 Meteor.startup(function () {
-    log('start up');
+    log('Meteor Starting');
     if (Coords.find().count() === 0) {
         Coords.insert({lat: 37.446013, long: -122.125731, createdAt: (new Date()).getTime()})
     }
@@ -99,13 +107,17 @@ Meteor.publish('state', function() {
 });
 
 var sendSMS = function(number, msg) {
+    log('sendSMS', number, msg);
     client.sendMessage({
       to: number,
       from: '+15128722240',
       body: msg
     }, function (err, res) {
-      log('err', err);
-      log('res', res);
+      if (err) {
+        loge('sendSMS', err);
+      } else {
+        log('sendSMS success');
+      }
     });
 };
 
@@ -130,7 +142,6 @@ var sendPushbullet = function(title, msg, phone_nickname, cb) {
 };
 
 var sendRing = function(to_number, from_number) {
-  log('send ring to', from_number);
   client.calls.create({
     to: to_number,
     from: from_number,
@@ -140,8 +151,11 @@ var sendRing = function(to_number, from_number) {
     statusCallbackMethod: "POST",
     statusCallbackEvent: ["completed"],
   }, function (err, res) {
-    log('err', err);
-    log('res', res);
+    if (res) {
+      loge('sendRing', err);
+    } else {
+      log('sendRing success');
+    }
   });
 };
 
@@ -164,6 +178,7 @@ Meteor.methods({
     sendRing: function (action, micro_name) {
       var from_number = phone_action_map[action];
       StateMap.upsert({key: 'ringStatus', micro_name: micro_name}, {$set: {val: 'ringing'}});
+      log('call sendRing', micro_name, action);
       sendRing(MICRO_PHONES[micro_name], from_number);
     },
     sendAndroidMessage: sendAndroidMessage,
@@ -232,7 +247,7 @@ var handle_micro_msg = function(msg) {
     micro_name = possible_imei;
     msg = msg.substr(5);
   }
-  log('handling', micro_name, msg);
+  log('handle_micro_msg handling', micro_name, msg);
 
   if (msg.indexOf('gps:') !== -1) {
     parts = msg.split(':');
@@ -243,7 +258,7 @@ var handle_micro_msg = function(msg) {
       type: 'gps',
       from_arduino: true
     };
-    log('insert', coord);
+    log('handle_micro_msg gps insert', coord.lat + ',' + coord.long);
     Coords.insert(coord);
   } else if (msg.indexOf('srt:') !== -1) {
     var locked = StateMap.findOne({key: 'locked', micro_name: micro_name});
@@ -263,15 +278,15 @@ var handle_micro_msg = function(msg) {
     sendAlert(micro_name, msg);
     sendAndroidMessage('bumped', micro_name);
   } else if (msg.indexOf("Locked") !== -1) {
-    log('locked', micro_name);
+    log('handle_micro_msg handle locked', micro_name);
     StateMap.upsert({key: 'locked', micro_name: micro_name}, {$set: {val: true}});
-    log('stream_gps off ', micro_name);
+    log('handle_micro_msg stream_gps off ', micro_name);
     StateMap.upsert({key: 'stream_gps', micro_name: micro_name}, {$set: {val: false}});
     StateMap.upsert({key: 'phone_watchdog_on', micro_name: micro_name}, {$set: {val: true}});
   } else if (msg.indexOf("Unlocked") !== -1) {
-    log('unlocked', micro_name);
+    log('handle_micro_msg unlocked', micro_name);
     StateMap.upsert({key: 'locked', micro_name: micro_name}, {$set: {val: false}});
-    log('stream_gps off ', micro_name);
+    log('handle_micro_msg stream_gps off ', micro_name);
     StateMap.upsert({key: 'stream_gps', micro_name: micro_name}, {$set: {val: false}});
     StateMap.upsert({key: 'phone_watchdog_on', micro_name: micro_name}, {$set: {val: false}});
   } else if (msg.indexOf("first_move") !== -1) {
@@ -281,11 +296,12 @@ var handle_micro_msg = function(msg) {
     sendAlert(micro_name, msg);
   }
   StateMap.upsert({key: 'lastSMS', micro_name: micro_name}, {$set: {val: msg}});
-  log('update micro_last_pings[' + micro_name + ']');
+  log('handle_micro_msg update micro_last_pings[' + micro_name + ']');
   micro_last_pings[micro_name] = (new Date()).getTime();
    
+  // TODO can't see when I get these, also why not in elseif?
   if (msg === 'stream_gps') {
-    log('stream_gps on ', micro_name);
+    log('handle_micro_msg stream_gps on ', micro_name);
     StateMap.upsert({key: 'stream_gps', micro_name: micro_name}, {$set: {val: true}});
   }
 };
@@ -300,7 +316,7 @@ Router.route('/sms', {where: 'server'})
 
 Router.route('/call', {where: 'server'})
   .post(function () {
-      log('hit call');
+      log('Respond to /call');
       var headers = {'Content-type': 'text/xml'};
       this.response.writeHead(200, headers);
       this.response.end('<Response></Response>');
@@ -309,7 +325,7 @@ Router.route('/call', {where: 'server'})
 Router.route('/call_completed', {where: 'server'})
   .post(function () {
       var micro_name = MICRO_PHONES_INVERSE[this.request.body.To];
-      log('call completed', micro_name);
+      log('/Respond to /call_completed for', micro_name);
       StateMap.upsert({key: 'ringStatus', micro_name: micro_name}, {$set: {val: 'completed'}});
       var headers = {'Content-type': 'text/xml'};
       this.response.writeHead(200, headers);
@@ -324,11 +340,11 @@ Meteor.setInterval(function() {
         return;
       }
       if (micro_last_pings[micro_name] + MICRO_WATCHDOG_TIMEOUT < (new Date()).getTime()) {
-        log('micro watchdog too old for', micro_name + ':', micro_last_pings[micro_name], (new Date()).getTime());
+        log('watchdog: micro watchdog too old for', micro_name + ':', micro_last_pings[micro_name], (new Date()).getTime());
         sendAlert(micro_name, 'micro watchdog expired!');
         StateMap.update(locked._id, {$set: {val: false}});
       } else {
-        log('micro interval for', micro_name, '=', (new Date()).getTime() - micro_last_pings[micro_name]);
+        log('watchdog: micro interval for', micro_name, '=', (new Date()).getTime() - micro_last_pings[micro_name]);
       }
     });
 
@@ -352,14 +368,14 @@ Meteor.setInterval(function() {
             phoneWatchdogWaiting = false;
           }, 10000);
       } else {
-        log('phone interval for', micro_name, '=', (new Date()).getTime() - phone_last_pings[micro_name]);
+        log('watchdog: phone interval for', micro_name, '=', (new Date()).getTime() - phone_last_pings[micro_name]);
       }
     });
 }, 2000);
 
 net.createServer(Meteor.bindEnvironment( function ( socket ) {
   socket.on("error", function(err) {
-    log("Caught tcp error: ");
+    loge("TCP Error on 5000");
     log(err.stack);
     socket.destroy();
   });
@@ -374,7 +390,7 @@ var global_clients = [];
 net.createServer(Meteor.bindEnvironment( function ( socket ) {
   var header = "HTTP/1.0 200 OK\r\nCache-Control: no-cache\r\nPragma: no-cache\r\nExpires: Thu, 01 Dec 1994 16:00:00 GMT\r\nConnection: close\r\nContent-Type: multipart/x-mixed-replace; boundary=--myboundary\r\n\r\n--myboundary\r\n";
   socket.on("error", function(err) {
-    log("3001 tcp error: ");
+    loge("TCP Error on 3001");
     global_clients.splice(global_clients.indexOf(socket), 1);
     log('stack', err.stack);
     socket.destroy();
@@ -385,19 +401,19 @@ net.createServer(Meteor.bindEnvironment( function ( socket ) {
     if (i !== -1) {
       global_clients.splice(i, 1);
     }
-    log('disconnected, global_clients left:', global_clients.length);
+    log('3001 disconnected, global_clients left:', global_clients.length);
   });
 
   socket.addListener("data", Meteor.bindEnvironment(function(data) {
-        log('got', data.toString('ascii'));
+        log('3001 data', data.toString('base64'));
         if (data.toString('ascii').indexOf('text/html') !== -1) {
             socket.write(header);
             global_clients.push(socket); // TODO kinda race condition.. this should be locked?
-            log('count', global_clients.length);
+            log('global_clients.length', global_clients.length);
         } else if (data.toString('ascii').indexOf('Accept: image/webp') !== -1 || data.toString('ascii').indexOf('curl') !== -1) {
             socket.write(header);
             global_clients.push(socket);
-            log('count', global_clients.length);
+            log('global_clients.length', global_clients.length);
 
         } else {
           socket.end();
@@ -409,11 +425,11 @@ net.createServer(Meteor.bindEnvironment( function ( socket ) {
   log('connection on 4000');
   var recording_name = (new Date()).toISOString() + '.vid';
   socket.on('end', function () {
-    log('streaming connection closed');
+    log('4000 streaming connection closed');
   });
 
   socket.on("error", function(err) {
-    log("4000 tcp error: ");
+    loge("TCP Error on 4000");
     log('stack', err.stack);
     socket.destroy();
   });
