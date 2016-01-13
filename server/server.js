@@ -61,7 +61,7 @@ var sendAndroidMessage = function(msg, micro_name) {
 
     sender.send(message, registrationIds, 5, function(err, result) {
       if (err) {
-        loge('sendAndroidMessag', err);
+        loge('sendAndroidMessage', err);
       } else {
         log('sendAndroidMessage success');
       }
