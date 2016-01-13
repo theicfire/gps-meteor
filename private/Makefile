@@ -2,6 +2,6 @@ getlogs:
 	bash read_logs.sh
 
 readlogs:
-	grep -E "] (connection|setglobalstate)" final.log  | less
+	grep -E "] (sendAndroidMessage|regid|sendSMS|sendRing|sendAlert|callsendRing|setglobalstate|handle_micro_msg)" final.log  | less
 
 .PHONY: getlogs
