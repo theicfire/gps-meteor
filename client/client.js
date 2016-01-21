@@ -122,9 +122,9 @@ Template.State.helpers({
     var stream_gps = StateMap.findOne({key: 'stream_gps', micro_name: this.toString()});
     return stream_gps && stream_gps.val ? 'ON' : 'OFF';
   },
-  lastSMS: function() {
-    var lastSMS = StateMap.findOne({key: 'lastSMS', micro_name: this.toString()});
-    return lastSMS ? lastSMS.val : 'None';
+  lastState: function() {
+    var lastState = StateMap.findOne({key: 'lastState', micro_name: this.toString()});
+    return lastState ? lastState.val : 'None';
   },
   cameraOn: function () {
     var cameraOn = StateMap.findOne({key: 'cameraOn', micro_name: this.toString()});

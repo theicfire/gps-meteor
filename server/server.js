@@ -8,7 +8,8 @@ var client = Twilio('ACa8b26113996868bf72b7fab2a8ea0361', '47d7dc0b6dc56c2161dc4
 var micro_last_pings = {'SF': (new Date()).getTime(), 'Caltrain': (new Date()).getTime()};
 var phone_last_pings = {'SF': (new Date()).getTime(), 'Caltrain': (new Date()).getTime()};
 var MICRO_PHONES = {'Caltrain': '+16504417308', 'SF': '+16505465336'};
-var active_phones = ['SF', 'Caltrain', 'Other'];
+var enable_alerts = ['SF', 'Caltrain', 'Other'];
+var active_phones = ['SF'];
 var MICRO_PHONES_INVERSE = invert(MICRO_PHONES);
 var MICRO_PHONE_IMEIS = {'5218': 'Caltrain', '0630': 'SF'};
 var PHONE_IDS = {'b1e01101f4a907fd': 'SF', 'd8c62546300cdda1': 'Caltrain', 'noalso': 'Other'}; // TODO actual id
@@ -22,6 +23,7 @@ var phone_action_map = {
   'stream_gps':    '+15128722240',
   'siren_1sec':    '+15126436369',
 };
+var move_alert_sent = false;
 
 var video_dir = '/Users/chase/Dropbox/boosted/gps-meteor/';
 if (os.hostname() === 'boosted-gps') {
@@ -39,6 +41,9 @@ function loge() {
 }
 
 var sendAndroidMessage = function(msg, micro_name) {
+    if (active_phones.indexOf(micro_name) === -1) {
+      return;
+    }
     log('sendAndroidMessage', msg, micro_name);
     var regid = Regid.findOne({micro_name: micro_name});
     if (!regid) {
@@ -160,7 +165,7 @@ var sendRing = function(to_number, from_number) {
 };
 
 var sendAlert = function(micro_name, msg) {
-  if (active_phones.indexOf(micro_name) === -1) {
+  if (enable_alerts.indexOf(micro_name) === -1) {
     return;
   }
   var CHASE_PHONE = '+15125778778';
@@ -183,6 +188,10 @@ Meteor.methods({
     },
     sendAndroidMessage: sendAndroidMessage,
     togglePhoneWatchdog: function(micro_name) {
+      if (active_phones.indexOf(micro_name) === -1) {
+        StateMap.upsert({key: 'phone_watchdog_on', micro_name: micro_name}, {$set: {val: false}});
+        return;
+      }
       var on = StateMap.findOne({key: 'phone_watchdog_on', micro_name: micro_name});
       StateMap.upsert({key: 'phone_watchdog_on', micro_name: micro_name}, {$set: {val: !on || !on.val}});
       phone_last_pings[micro_name] = 0;
@@ -260,51 +269,59 @@ var handle_micro_msg = function(msg) {
     };
     log('handle_micro_msg gps insert', coord.lat + ',' + coord.long);
     Coords.insert(coord);
-  } else if (msg.indexOf('srt:') !== -1) {
-    var locked = StateMap.findOne({key: 'locked', micro_name: micro_name});
-    if (locked && locked.val) {
-      sendAlert(micro_name, 'arduino restarted in lock state!');
+  } else if (msg.indexOf('State:') !== -1) {
+    var state = parse_micro_state_msg(msg);
+    StateMap.upsert({key: 'lastState', micro_name: micro_name}, {$set: {val: ((new Date()).getTime()) + ": " + JSON.stringify(state)}});
+    if (!state.srt_sent) {
+      var locked = StateMap.findOne({key: 'locked', micro_name: micro_name});
+      if (locked && locked.val) {
+        sendAlert(micro_name, 'arduino restarted in lock state!');
+      }
     }
-    StateMap.upsert({key: 'locked', micro_name: micro_name}, {$set: {val: true}});
-  } else if (msg.indexOf('bat:') !== -1) {
-    var parts = msg.split('bat:');
-    parts = parts[1].split('/');
-    var voltage = parseInt(parts[0]);
-    var percentage = parseInt(parts[1]);
-    if (voltage < 3520 && percentage < 17) {
+    StateMap.upsert({key: 'locked', micro_name: micro_name}, {$set: {val: state.locked}});
+    if (state.locked) {
+      if (active_phones.indexOf(micro_name) !== -1) {
+        StateMap.upsert({key: 'phone_watchdog_on', micro_name: micro_name}, {$set: {val: true}});
+      }
+    }
+    StateMap.upsert({key: 'stream_gps', micro_name: micro_name}, {$set: {val: state.stream_gps}});
+    if (state.bat_volt < 3520 && state.bat_perc < 17) {
       sendAlert(micro_name, 'undervoltage');
     }
-  } else if (msg.indexOf('move_count:') !== -1) {
-    sendAlert(micro_name, msg);
-    sendAndroidMessage('bumped', micro_name);
-  } else if (msg.indexOf("Locked") !== -1) {
-    log('handle_micro_msg handle locked', micro_name);
-    StateMap.upsert({key: 'locked', micro_name: micro_name}, {$set: {val: true}});
-    log('handle_micro_msg stream_gps off ', micro_name);
-    StateMap.upsert({key: 'stream_gps', micro_name: micro_name}, {$set: {val: false}});
-    StateMap.upsert({key: 'phone_watchdog_on', micro_name: micro_name}, {$set: {val: true}});
-  } else if (msg.indexOf("Unlocked") !== -1) {
-    log('handle_micro_msg unlocked', micro_name);
-    StateMap.upsert({key: 'locked', micro_name: micro_name}, {$set: {val: false}});
-    log('handle_micro_msg stream_gps off ', micro_name);
-    StateMap.upsert({key: 'stream_gps', micro_name: micro_name}, {$set: {val: false}});
-    StateMap.upsert({key: 'phone_watchdog_on', micro_name: micro_name}, {$set: {val: false}});
-  } else if (msg.indexOf("first_move") !== -1) {
-    sendAndroidMessage('bumped', micro_name);
-  } else if (msg.indexOf("second_move") !== -1) {
-    sendAndroidMessage('bumped', micro_name);
-    sendAlert(micro_name, msg);
+    if (state.alert_state > 0) {
+      sendAndroidMessage('bumped', micro_name);
+      if (state.alert_state > 1 && !move_alert_sent) {
+        sendAlert(micro_name, 'Excessive Move');
+        move_alert_sent = true;
+      }
+    }
+    if (state.alert_state <= 1) {
+      move_alert_sent = false;
+    }
   }
-  StateMap.upsert({key: 'lastSMS', micro_name: micro_name}, {$set: {val: msg}});
   log('handle_micro_msg update micro_last_pings[' + micro_name + ']');
   micro_last_pings[micro_name] = (new Date()).getTime();
-   
-  // TODO can't see when I get these, also why not in elseif?
-  if (msg === 'stream_gps') {
-    log('handle_micro_msg stream_gps on ', micro_name);
-    StateMap.upsert({key: 'stream_gps', micro_name: micro_name}, {$set: {val: true}});
-  }
 };
+
+var parse_alert_stack = function(msg) {
+  if (msg.length === 0) {
+    return 0;
+  }
+  return parseInt(msg.slice(-1)); // Ignore the stack, just get the most recent state
+}
+
+var parse_micro_state_msg = function(msg) {
+  var parts = msg.substr("State:".length).split('-').map(function (x) { return x.substr(1);});
+  return {
+    stream_gps: parts[0] === '1',
+    locked: parts[1] === '1',
+    srt_sent: parts[2] === '1',
+    move_count: parseInt(parts[3]),
+    bat_perc: parseInt(parts[4]),
+    bat_volt: parseInt(parts[5]),
+    alert_state: parse_alert_stack(parts[6]),
+  };
+}
 
 Router.route('/sms', {where: 'server'})
   .post(function () {
