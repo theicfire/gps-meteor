@@ -321,6 +321,7 @@ var parse_micro_state_msg = function(msg) {
     bat_perc: parseInt(parts[4]),
     bat_volt: parseInt(parts[5]),
     alert_state: parse_alert_stack(parts[6]),
+    last_ring_action: parts[7],
   };
 }
 
