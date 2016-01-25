@@ -156,8 +156,8 @@ var sendRing = function(to_number, from_number) {
     statusCallbackMethod: "POST",
     statusCallbackEvent: ["completed"],
   }, function (err, res) {
-    if (res) {
-      loge('sendRing', err);
+    if (err) {
+      loge('sendRing', err, res);
     } else {
       log('sendRing success');
     }
