@@ -271,7 +271,8 @@ var handle_micro_msg = function(msg) {
     Coords.insert(coord);
   } else if (msg.indexOf('State:') !== -1) {
     var state = parse_micro_state_msg(msg);
-    StateMap.upsert({key: 'lastState', micro_name: micro_name}, {$set: {val: ((new Date()).getTime()) + ": " + JSON.stringify(state)}});
+    log('handle_micro_msg StateDict:', micro_name, JSON.stringify(state));
+    StateMap.upsert({key: 'lastState', micro_name: micro_name}, {$set: {val: ((new Date()).toISOString()) + ": " + JSON.stringify(state)}});
     if (!state.srt_sent) {
       var locked = StateMap.findOne({key: 'locked', micro_name: micro_name});
       if (locked && locked.val) {
