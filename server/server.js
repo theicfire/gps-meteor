@@ -314,7 +314,7 @@ var parse_alert_stack = function(msg) {
 var parse_micro_state_msg = function(msg) {
   var parts = msg.substr("State:".length).split('-').map(function (x) { return x.substr(1);});
   return {
-    stream_gps: parts[0] === '1',
+    stream_gps: parseInt(parts[0]),
     locked: parts[1] === '1',
     srt_sent: parts[2] === '1',
     move_count: parseInt(parts[3]),
