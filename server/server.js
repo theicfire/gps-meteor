@@ -18,32 +18,10 @@ var phone_action_map = {
 var move_alert_sent = false;
 var boxes = Globals.boxes;
 
-var box_name_from_imei = function(imei) {
+var box_name_from_key = function(key, val) {
   var ret = null;
   Object.keys(boxes).forEach(function (box_name) {
-    if (boxes[box_name].fona_imei === imei) {
-      ret = box_name;
-      return;
-    }
-  });
-  return ret;
-};
-
-var box_name_from_phone_id = function(phone_id) {
-  var ret = null;
-  Object.keys(boxes).forEach(function (box_name) {
-    if (boxes[box_name].phone_id === phone_id) {
-      ret = box_name;
-      return;
-    }
-  });
-  return ret;
-};
-
-var box_name_from_fona_number = function(fona_number) {
-  var ret = null;
-  Object.keys(boxes).forEach(function (box_name) {
-    if (boxes[box_name].fona_number === fona_number) {
+    if (boxes[box_name][key] === val) {
       ret = box_name;
       return;
     }
@@ -113,7 +91,7 @@ Router.route('/regid/:phone_id/:regid', {where: 'server'})
         if (!this.params.regid || this.params.regid.length === 0) { // TODO temporary, for my not-updated android phone
           return;
         }
-        var box_name = box_name_from_phone_id(this.params.phone_id);
+        var box_name = box_name_from_key('phone_id', this.params.phone_id);
         if (!box_name) {
           loge('unknown phone_id', this.params.phone_id);
           this.response.end('Unknown phone_id\n');
@@ -258,7 +236,7 @@ Router.route('/setGlobalState/:phone_id/:key/:value', {where: 'server'})
         if (['cameraOn'].indexOf(this.params.key) >= 0) {
             value = this.params.value === 'true';
         }
-        var box_name = box_name_from_phone_id(this.params.phone_id);
+        var box_name = box_name_from_key('phone_id', this.params.phone_id);
         if (!box_name) {
           loge('unknown phone_id', this.params.phone_id);
           this.response.end('Unknown phone_id\n');
@@ -274,7 +252,7 @@ Router.route('/setGlobalState/:phone_id/:key/:value', {where: 'server'})
 var handle_micro_msg = function(msg) {
   msg = msg.trim();
 
-  var box_name = box_name_from_imei(msg.substr(0, 4));
+  var box_name = box_name_from_key('imei', msg.substr(0, 4));
   if (!box_name) {
     loge("Can't handle micr_msg:", msg);
     return;
@@ -367,7 +345,7 @@ Router.route('/call', {where: 'server'})
 
 Router.route('/call_completed', {where: 'server'})
   .post(function () {
-      var box_name = box_name_from_fona_number(this.request.body.To);
+      var box_name = box_name_from_key('fona_number', this.request.body.To);
       if (!box_name) {
         loge('call_completed with invalid box_name: ', box_name);
         this.response.end('Invalid box_name');
