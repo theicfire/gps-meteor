@@ -21,6 +21,14 @@ var boxes = {
     phone_id: 'b1e01101f4a907fd',
     phone_last_ping: (new Date()).getTime(),
     enable_alerts: true,
+  },
+  stanford2: {
+    fona_number: '+16506953528',
+    fona_imei: '7248',
+    micro_last_ping: (new Date()).getTime(),
+    //phone_id: 'b1e01101f4a907fd',
+    //phone_last_ping: (new Date()).getTime(),
+    enable_alerts: false,
   }
 };
 var MICRO_WATCHDOG_TIMEOUT = 1800000;
