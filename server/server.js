@@ -5,14 +5,24 @@ var os = Meteor.npmRequire('os');
 var gcm = Meteor.npmRequire('node-gcm');
 var PushBullet = Meteor.npmRequire('pushbullet');
 var client = Twilio('ACa8b26113996868bf72b7fab2a8ea0361', '47d7dc0b6dc56c2161dc44bc0324bb70');
-var micro_last_pings = {'SF': (new Date()).getTime(), 'Caltrain': (new Date()).getTime()};
-var phone_last_pings = {'SF': (new Date()).getTime(), 'Caltrain': (new Date()).getTime()};
-var MICRO_PHONES = {'Caltrain': '+16504417308', 'SF': '+16505465336'};
-var enable_alerts = ['SF', 'Caltrain', 'Other'];
-var active_phones = ['SF'];
-var MICRO_PHONES_INVERSE = invert(MICRO_PHONES);
-var MICRO_PHONE_IMEIS = {'5218': 'Caltrain', '0630': 'SF'};
-var PHONE_IDS = {'b1e01101f4a907fd': 'SF', 'd8c62546300cdda1': 'Caltrain', 'noalso': 'Other'}; // TODO actual id
+var boxes = {
+  stanford1: {
+    fona_number: '+16504417308',
+    fona_imei: '5218',
+    micro_last_ping: (new Date()).getTime(),
+    //phone_id: 'd8c62546300cdda1',
+    //phone_last_ping: (new Date()).getTime(),
+    enable_alerts: true,
+  },
+  bluebike: {
+    fona_number: '+16505465336',
+    fona_imei: '0630',
+    micro_last_ping: (new Date()).getTime(),
+    phone_id: 'b1e01101f4a907fd',
+    phone_last_ping: (new Date()).getTime(),
+    enable_alerts: true,
+  }
+};
 var MICRO_WATCHDOG_TIMEOUT = 1800000;
 var PHONE_WATCHDOG_TIMEOUT = 600000;
 var pusher = new PushBullet('oYHlSULc3i998hvbuVtsjlH0ps23l7y2');
@@ -24,6 +34,39 @@ var phone_action_map = {
   'siren_1sec':    '+15126436369',
 };
 var move_alert_sent = false;
+
+var box_name_from_imei = function(imei) {
+  var ret = null;
+  Object.keys(boxes).forEach(function (micro_name) {
+    if (boxes[micro_name].fona_imei === imei) {
+      ret = micro_name;
+      return;
+    }
+  });
+  return ret;
+};
+
+var box_name_from_phone_id = function(phone_id) {
+  var ret = null;
+  Object.keys(boxes).forEach(function (micro_name) {
+    if (boxes[micro_name].phone_id === phone_id) {
+      ret = micro_name;
+      return;
+    }
+  });
+  return ret;
+};
+
+var box_name_from_fona_number = function(fona_number) {
+  var ret = null;
+  Object.keys(boxes).forEach(function (micro_name) {
+    if (boxes[micro_name].fona_number === fona_number) {
+      ret = micro_name;
+      return;
+    }
+  });
+  return ret;
+};
 
 var video_dir = '/Users/chase/Dropbox/boosted/gps-meteor/';
 if (os.hostname() === 'boosted-gps') {
@@ -41,7 +84,7 @@ function loge() {
 }
 
 var sendAndroidMessage = function(msg, micro_name) {
-    if (active_phones.indexOf(micro_name) === -1) {
+    if (!boxes[micro_name].hasOwnProperty('phone_id')) {
       return;
     }
     log('sendAndroidMessage', msg, micro_name);
@@ -87,9 +130,10 @@ Router.route('/regid/:phone_id/:regid', {where: 'server'})
         if (!this.params.regid || this.params.regid.length === 0) { // TODO temporary, for my not-updated android phone
           return;
         }
-        var micro_name = 'Caltrain';
-        if (PHONE_IDS[this.params.phone_id]) {
-          micro_name = PHONE_IDS[this.params.phone_id];
+        var micro_name = box_name_from_phone_id(this.params.phone_id);
+        if (!micro_name) {
+          loge('unknown phone_id', this.params.phone_id);
+          return;
         }
 
         Regid.upsert({micro_name: micro_name}, {$set: {regid: this.params.regid}});
@@ -165,7 +209,7 @@ var sendRing = function(to_number, from_number) {
 };
 
 var sendAlert = function(micro_name, msg) {
-  if (enable_alerts.indexOf(micro_name) === -1) {
+  if (!boxes[micro_name].enable_alerts) {
     return;
   }
   var CHASE_PHONE = '+15125778778';
@@ -184,17 +228,17 @@ Meteor.methods({
       var from_number = phone_action_map[action];
       StateMap.upsert({key: 'ringStatus', micro_name: micro_name}, {$set: {val: 'ringing'}});
       log('call sendRing', micro_name, action);
-      sendRing(MICRO_PHONES[micro_name], from_number);
+      sendRing(boxes[micro_name].fona_number, from_number);
     },
     sendAndroidMessage: sendAndroidMessage,
     togglePhoneWatchdog: function(micro_name) {
-      if (active_phones.indexOf(micro_name) === -1) {
+      if (!boxes[micro_name].hasOwnProperty('phone_id')) {
         StateMap.upsert({key: 'phone_watchdog_on', micro_name: micro_name}, {$set: {val: false}});
         return;
       }
       var on = StateMap.findOne({key: 'phone_watchdog_on', micro_name: micro_name});
       StateMap.upsert({key: 'phone_watchdog_on', micro_name: micro_name}, {$set: {val: !on || !on.val}});
-      phone_last_pings[micro_name] = 0;
+      boxes[micro_name].phone_last_ping = 0;
     },
 });
 
@@ -224,25 +268,20 @@ Router.route('/add_arduino/:lat/:long/:type', {where: 'server'})
       this.response.end('Received loc of ' + JSON.stringify(coord) + '\n');
   });
 
-Router.route('/setGlobalState/:phone_id/:key/:value?', {where: 'server'})
+Router.route('/setGlobalState/:phone_id/:key/:value', {where: 'server'})
     .post(function () {
-        if (!this.params.value || this.params.value === 0) { // TODO temporary for phone outside.. also remove ? of :value? above
-          this.params.value = this.params.key;
-          this.params.key = this.params.phone_id;
-          this.params.phone_id = 'Caltrain';
-        }
         log('setglobalstate', this.params.phone_id, this.params.key, this.params.value);
         var value = this.params.value;
         if (['cameraOn'].indexOf(this.params.key) >= 0) {
             value = this.params.value === 'true';
         }
-        var micro_name = 'Caltrain';
-        if (PHONE_IDS[this.params.phone_id]) {
-          micro_name = PHONE_IDS[this.params.phone_id];
+        var micro_name = box_name_from_phone_id(this.params.phone_id);
+        if (!micro_name) {
+          loge('unknown phone_id', this.params.phone_id);
         }
         StateMap.upsert({key: this.params.key, micro_name: micro_name}, {$set: {val: value}});
         if (this.params.key === 'bat') {
-          phone_last_pings[micro_name] = (new Date()).getTime();
+          boxes[micro_name].phone_last_ping = (new Date()).getTime();
         }
         this.response.end('done');
     });
@@ -250,12 +289,12 @@ Router.route('/setGlobalState/:phone_id/:key/:value?', {where: 'server'})
 var handle_micro_msg = function(msg) {
   msg = msg.trim();
 
-  var micro_name = 'Other';
-  var possible_imei = MICRO_PHONE_IMEIS[msg.substr(0, 4)];
-  if (possible_imei) {
-    micro_name = possible_imei;
-    msg = msg.substr(5);
+  var micro_name = box_name_from_imei(msg.substr(0, 4));
+  if (!micro_name) {
+    loge("Can't handle micr_msg:", msg);
+    return;
   }
+  msg = msg.substr(5);
   log('handle_micro_msg handling', micro_name, msg);
 
   if (msg.indexOf('gps:') !== -1) {
@@ -281,7 +320,7 @@ var handle_micro_msg = function(msg) {
     }
     StateMap.upsert({key: 'locked', micro_name: micro_name}, {$set: {val: state.locked}});
     if (state.locked) {
-      if (active_phones.indexOf(micro_name) !== -1) {
+      if (boxes[micro_name].hasOwnProperty('phone_id')) {
         StateMap.upsert({key: 'phone_watchdog_on', micro_name: micro_name}, {$set: {val: true}});
       }
     }
@@ -300,8 +339,8 @@ var handle_micro_msg = function(msg) {
       move_alert_sent = false;
     }
   }
-  log('handle_micro_msg update micro_last_pings[' + micro_name + ']');
-  micro_last_pings[micro_name] = (new Date()).getTime();
+  log('handle_micro_msg update boxes[' + micro_name + '].micro_last_ping');
+  boxes[micro_name].micro_last_ping = (new Date()).getTime();
 };
 
 var parse_alert_stack = function(msg) {
@@ -343,7 +382,7 @@ Router.route('/call', {where: 'server'})
 
 Router.route('/call_completed', {where: 'server'})
   .post(function () {
-      var micro_name = MICRO_PHONES_INVERSE[this.request.body.To];
+      var micro_name = box_name_from_fona_number(this.request.body.To);
       log('/Respond to /call_completed for', micro_name);
       StateMap.upsert({key: 'ringStatus', micro_name: micro_name}, {$set: {val: 'completed'}});
       var headers = {'Content-type': 'text/xml'};
@@ -353,21 +392,21 @@ Router.route('/call_completed', {where: 'server'})
 
 var phoneWatchdogWaiting = false;
 Meteor.setInterval(function() {
-    Object.keys(micro_last_pings).forEach(function (micro_name) {
+    Object.keys(boxes).forEach(function (micro_name) {
       var locked = StateMap.findOne({key: 'locked', micro_name: micro_name});
       if (!locked || !locked.val) {
         return;
       }
-      if (micro_last_pings[micro_name] + MICRO_WATCHDOG_TIMEOUT < (new Date()).getTime()) {
-        log('watchdog: micro watchdog too old for', micro_name + ':', micro_last_pings[micro_name], (new Date()).getTime());
+      if (boxes[micro_name].micro_last_ping + MICRO_WATCHDOG_TIMEOUT < (new Date()).getTime()) {
+        log('watchdog: micro watchdog too old for', micro_name + ':', boxes[micro_name].micro_last_ping, (new Date()).getTime());
         sendAlert(micro_name, 'micro watchdog expired!');
         StateMap.update(locked._id, {$set: {val: false}});
       } else {
-        log('watchdog: micro interval for', micro_name, '=', (new Date()).getTime() - micro_last_pings[micro_name]);
+        log('watchdog: micro interval for', micro_name, '=', (new Date()).getTime() - boxes[micro_name].micro_last_ping);
       }
     });
 
-    Object.keys(phone_last_pings).forEach(function (micro_name) {
+    Object.keys(boxes).forEach(function (micro_name) {
       var on = StateMap.findOne({key: 'phone_watchdog_on', micro_name: micro_name});
       if (!on || !on.val) {
         return;
@@ -375,11 +414,11 @@ Meteor.setInterval(function() {
       if (phoneWatchdogWaiting) {
         return;
       }
-      if (phone_last_pings[micro_name] + PHONE_WATCHDOG_TIMEOUT < (new Date()).getTime()) {
+      if (boxes[micro_name].phone_last_ping + PHONE_WATCHDOG_TIMEOUT < (new Date()).getTime()) {
         sendAndroidMessage('alive_check', micro_name);
         phoneWatchdogWaiting = true;
         Meteor.setTimeout(function() {
-            if (phone_last_pings[micro_name] + PHONE_WATCHDOG_TIMEOUT < (new Date()).getTime()) {
+            if (boxes[micro_name].phone_last_ping + PHONE_WATCHDOG_TIMEOUT < (new Date()).getTime()) {
               sendAlert(micro_name, 'phone did not respond!');
               StateMap.update(on._id, {$set: {val: false}});
               StateMap.upsert({key: 'phone_watchdog_on', micro_name: micro_name}, {$set: {val: false}});
@@ -387,7 +426,7 @@ Meteor.setInterval(function() {
             phoneWatchdogWaiting = false;
           }, 10000);
       } else {
-        log('watchdog: phone interval for', micro_name, '=', (new Date()).getTime() - phone_last_pings[micro_name]);
+        log('watchdog: phone interval for', micro_name, '=', (new Date()).getTime() - boxes[micro_name].phone_last_ping);
       }
     });
 }, 2000);
