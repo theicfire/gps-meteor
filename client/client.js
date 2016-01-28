@@ -108,42 +108,42 @@ Template.ArduinoListing.helpers({
   coords: function() {
     return Coords.find({from_arduino: true});
   },
-  micro_names: function() {
+  box_names: function() {
     return Object.keys(Globals.boxes).map(function (box_name) {return {name: box_name};});
   }
 });
 
 Template.State.helpers({
   lock: function() {
-    var locked = StateMap.findOne({key: 'locked', micro_name: this.toString()});
+    var locked = StateMap.findOne({key: 'locked', box_name: this.toString()});
     return locked && locked.val ? 'ON' : 'OFF';
   },
   stream_gps: function() {
-    var stream_gps = StateMap.findOne({key: 'stream_gps', micro_name: this.toString()});
+    var stream_gps = StateMap.findOne({key: 'stream_gps', box_name: this.toString()});
     return stream_gps && stream_gps.val ? 'ON' : 'OFF';
   },
   lastState: function() {
-    var lastState = StateMap.findOne({key: 'lastState', micro_name: this.toString()});
+    var lastState = StateMap.findOne({key: 'lastState', box_name: this.toString()});
     return lastState ? lastState.val : 'None';
   },
   cameraOn: function () {
-    var cameraOn = StateMap.findOne({key: 'cameraOn', micro_name: this.toString()});
+    var cameraOn = StateMap.findOne({key: 'cameraOn', box_name: this.toString()});
     return cameraOn && cameraOn.val ? 'ON' : 'OFF';
   },
   phoneWatchdogOn: function () {
-    var on = StateMap.findOne({key: 'phone_watchdog_on', micro_name: this.toString()});
+    var on = StateMap.findOne({key: 'phone_watchdog_on', box_name: this.toString()});
     return on && on.val ? 'ON' : 'OFF';
   },
   cameraBat: function () {
-    var bat = StateMap.findOne({key: 'bat', micro_name: this.toString()});
+    var bat = StateMap.findOne({key: 'bat', box_name: this.toString()});
     return bat ? bat.val : 'None';
   },
   ringStatus: function() {
-    var ringStatus = StateMap.findOne({key: 'ringStatus', micro_name: this.toString()});
+    var ringStatus = StateMap.findOne({key: 'ringStatus', box_name: this.toString()});
     return ringStatus ? ringStatus.val : 'None';
   },
   frame_count: function() {
-    var frame_count = StateMap.findOne({key: 'frame_count', micro_name: 'Caltrain'});
+    var frame_count = StateMap.findOne({key: 'frame_count', box_name: 'Caltrain'});
     if (frame_count) {
       return frame_count.val;
     }
