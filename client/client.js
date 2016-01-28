@@ -109,7 +109,7 @@ Template.ArduinoListing.helpers({
     return Coords.find({from_arduino: true});
   },
   micro_names: function() {
-    return [{'name': 'SF'}, {'name': 'Caltrain'}];
+    return Object.keys(Globals.boxes).map(function (box_name) {return {name: box_name};});
   }
 });
 

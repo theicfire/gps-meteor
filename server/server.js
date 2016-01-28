@@ -5,32 +5,6 @@ var os = Meteor.npmRequire('os');
 var gcm = Meteor.npmRequire('node-gcm');
 var PushBullet = Meteor.npmRequire('pushbullet');
 var client = Twilio('ACa8b26113996868bf72b7fab2a8ea0361', '47d7dc0b6dc56c2161dc44bc0324bb70');
-var boxes = {
-  stanford1: {
-    fona_number: '+16504417308',
-    fona_imei: '5218',
-    micro_last_ping: (new Date()).getTime(),
-    //phone_id: 'd8c62546300cdda1',
-    //phone_last_ping: (new Date()).getTime(),
-    enable_alerts: true,
-  },
-  bluebike: {
-    fona_number: '+16505465336',
-    fona_imei: '0630',
-    micro_last_ping: (new Date()).getTime(),
-    phone_id: 'b1e01101f4a907fd',
-    phone_last_ping: (new Date()).getTime(),
-    enable_alerts: true,
-  },
-  stanford2: {
-    fona_number: '+16506953528',
-    fona_imei: '7248',
-    micro_last_ping: (new Date()).getTime(),
-    //phone_id: 'b1e01101f4a907fd',
-    //phone_last_ping: (new Date()).getTime(),
-    enable_alerts: false,
-  }
-};
 var MICRO_WATCHDOG_TIMEOUT = 1800000;
 var PHONE_WATCHDOG_TIMEOUT = 600000;
 var pusher = new PushBullet('oYHlSULc3i998hvbuVtsjlH0ps23l7y2');
@@ -42,6 +16,7 @@ var phone_action_map = {
   'siren_1sec':    '+15126436369',
 };
 var move_alert_sent = false;
+var boxes = Globals.boxes;
 
 var box_name_from_imei = function(imei) {
   var ret = null;
