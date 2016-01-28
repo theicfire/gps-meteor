@@ -133,6 +133,7 @@ Router.route('/regid/:phone_id/:regid', {where: 'server'})
         var micro_name = box_name_from_phone_id(this.params.phone_id);
         if (!micro_name) {
           loge('unknown phone_id', this.params.phone_id);
+          this.response.end('Unknown phone_id\n');
           return;
         }
 
@@ -278,6 +279,8 @@ Router.route('/setGlobalState/:phone_id/:key/:value', {where: 'server'})
         var micro_name = box_name_from_phone_id(this.params.phone_id);
         if (!micro_name) {
           loge('unknown phone_id', this.params.phone_id);
+          this.response.end('Unknown phone_id\n');
+          return;
         }
         StateMap.upsert({key: this.params.key, micro_name: micro_name}, {$set: {val: value}});
         if (this.params.key === 'bat') {
