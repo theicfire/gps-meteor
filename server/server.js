@@ -243,7 +243,6 @@ Meteor.methods({
     },
 });
 
-
 // IronRouter
 Router.route('/add_coords/:lat/:long/:time', {where: 'server'})
   .post(function () {
@@ -386,7 +385,12 @@ Router.route('/call', {where: 'server'})
 Router.route('/call_completed', {where: 'server'})
   .post(function () {
       var micro_name = box_name_from_fona_number(this.request.body.To);
-      log('/Respond to /call_completed for', micro_name);
+      if (!micro_name) {
+        loge('call_completed with invalid micro_name: ', micro_name);
+        this.response.end('Invalid micro_name');
+        return;
+      }
+      log('Respond to /call_completed for', micro_name);
       StateMap.upsert({key: 'ringStatus', micro_name: micro_name}, {$set: {val: 'completed'}});
       var headers = {'Content-type': 'text/xml'};
       this.response.writeHead(200, headers);
