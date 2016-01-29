@@ -184,6 +184,17 @@ Router.route('/map', function () {
   this.render('Map');
 });
 
+Router.route('/showmap/:box_name', function () {
+  // Not sure what this is, but I'll keep it here
+  this.render('BoxMap');
+});
+
+Template.BoxMap.helpers({
+  box_name: function () {
+    return 'cool'
+  },
+});
+
 
 //var doneFirst = false;
 //Template.Map.created = function () {

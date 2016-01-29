@@ -1,3 +1,8 @@
+
+<template name="BoxMap">
+  hi {{box_name}} there
+</template>
+
 <template name="ArduinoListing">
   <!--<img class="video" src="http://gps.chaselambda.com:3001"/>-->
   <a href="http://gps.chaselambda.com:3001">Live Stream</a>
@@ -49,6 +54,7 @@
     GPS Streaming: {{stream_gps}}<br/>
     Last State: {{lastState}}<br/>
     Ring Status: {{ringStatus}}<br/>
+    <a href="/showmap/{{this}}">Map</a><br/>
     {{#if has_phone}}
       Phone Camera: {{cameraOn}}<br/>
       Phone Watchdog: {{phoneWatchdogOn}}<br/>
