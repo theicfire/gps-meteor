@@ -84,6 +84,11 @@ Template.Map.created = function() {
             });
         }
     });
+    GoogleMaps.load();
+    GoogleMaps.ready('exampleMap', function(map) {
+        globalMap = map;
+        Session.set('liveview', true);
+    });
 };
 
 Meteor.subscribe('arduino_coords');
@@ -102,6 +107,16 @@ Template.Map.helpers({
     liveview: function() {
         return Session.get('liveview');
     },
+    exampleMapOptions: function() {
+      // Make sure the maps API has loaded
+      if (GoogleMaps.loaded()) {
+        // Map initialization options
+        return {
+          center: new google.maps.LatLng(37.6, -122.39),
+          zoom: 10
+        };
+      }
+    }
 });
 
 Template.ArduinoListing.helpers({
@@ -247,27 +262,6 @@ Router.route('/map', function () {
 
 
 // Map stuff
-Meteor.startup(function() {
-GoogleMaps.load();
-});
-
-Template.body.helpers({
-    exampleMapOptions: function() {
-      // Make sure the maps API has loaded
-      if (GoogleMaps.loaded()) {
-        // Map initialization options
-        return {
-          center: new google.maps.LatLng(37.6, -122.39),
-          zoom: 10
-        };
-      }
-    }
-});
-
-Template.body.created = function() {
-// We can use the `ready` callback to interact with the map API once the map is ready.
-GoogleMaps.ready('exampleMap', function(map) {
-    globalMap = map;
-    Session.set('liveview', true);
-});
-};
+//Meteor.startup(function() {
+  //GoogleMaps.load();
+//});

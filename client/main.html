@@ -1,14 +1,12 @@
 <head>
     <title>GPS Stuff</title>
 </head>
-<body>
-  <div class="map-container">
-    {{> googleMap name="exampleMap" options=exampleMapOptions}}
-  </div>
-</body>
 
 <template name="Map">
 <div style="margin-bottom: 20px">
+  <div class="map-container">
+    {{> googleMap name="exampleMap" options=exampleMapOptions}}
+  </div>
 <form class="markerCounter">
     <input type="text" placeholder="Marker number" value="{{coordNum}}"/>
 </form>
