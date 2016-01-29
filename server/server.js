@@ -252,9 +252,9 @@ Router.route('/setGlobalState/:phone_id/:key/:value', {where: 'server'})
 var handle_micro_msg = function(msg) {
   msg = msg.trim();
 
-  var box_name = box_name_from_key('imei', msg.substr(0, 4));
+  var box_name = box_name_from_key('fona_imei', msg.substr(0, 4));
   if (!box_name) {
-    loge("Can't handle micr_msg:", msg);
+    loge("Can't handle micro_msg:", msg);
     return;
   }
   msg = msg.substr(5);
