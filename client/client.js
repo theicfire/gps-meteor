@@ -110,7 +110,14 @@ Template.ArduinoListing.helpers({
   },
   box_names: function() {
     return Object.keys(Globals.boxes).map(function (box_name) {return {name: box_name};});
-  }
+  },
+});
+var has_phone = function() {
+  return Globals.boxes[this.toString()].hasOwnProperty('phone_id');
+};
+
+Template.Buttons.helpers({
+  has_phone: has_phone,
 });
 
 Template.State.helpers({
@@ -148,17 +155,18 @@ Template.State.helpers({
       return frame_count.val;
     }
     return 'None';
-  }
+  },
+  has_phone: has_phone,
 });
 
 Router.route('/', function () {
   // render the Home template with a custom data context
-  this.render('Map');
+  this.render('ArduinoListing');
 });
 
-Router.route('/cool', function () {
-  // render the Home template with a custom data context
-  this.render('ArduinoListing');
+Router.route('/map', function () {
+  // Not sure what this is, but I'll keep it here
+  this.render('Map');
 });
 
 

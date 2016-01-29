@@ -28,16 +28,18 @@
   <button class="sms-button">bat</button>
   <button class="sms-button">siren_1sec</button>
   </div>
-  <div>
-    Send Phone Message:
-    <button class="gcm-button">camera_on</button>
-    <button class="gcm-button">camera_off</button>
-    <button class="gcm-button">bumped</button>
-  </div>
-  <div>
-    Phone Settings:
-    <button class="phone-watchdog-button">Toggle Watchdog</button>
-  </div>
+  {{#if has_phone}}
+    <div>
+      Send Phone Message:
+      <button class="gcm-button">camera_on</button>
+      <button class="gcm-button">camera_off</button>
+      <button class="gcm-button">bumped</button>
+    </div>
+    <div>
+      Phone Settings:
+      <button class="phone-watchdog-button">Toggle Watchdog</button>
+    </div>
+  {{/if}}
 
 </template>
 
@@ -46,11 +48,13 @@
     Lock: {{lock}}<br/>
     GPS Streaming: {{stream_gps}}<br/>
     Last State: {{lastState}}<br/>
-    Phone Camera: {{cameraOn}}<br/>
-    Phone Watchdog: {{phoneWatchdogOn}}<br/>
-    Phone Battery: {{cameraBat}}<br/>
     Ring Status: {{ringStatus}}<br/>
-    Data Count: {{frame_count}}
+    {{#if has_phone}}
+      Phone Camera: {{cameraOn}}<br/>
+      Phone Watchdog: {{phoneWatchdogOn}}<br/>
+      Phone Battery: {{cameraBat}}<br/>
+      Data Count: {{frame_count}}
+    {{/if}}
 
   </div>
 </template>
