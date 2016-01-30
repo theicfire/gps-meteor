@@ -231,6 +231,10 @@ Router.route('/setGlobalState/:phone_id/:key/:value', {where: 'server'})
         this.response.end('done');
     });
 
+var bike_moved = function(state) {
+  return state.last_action.substr(0, 4) === 'move';
+};
+
 var handle_micro_msg = function(msg) {
   msg = msg.trim();
 
@@ -274,7 +278,7 @@ var handle_micro_msg = function(msg) {
     if (state.bat_volt < 3520 && state.bat_perc < 17) {
       sendAlert(box_name, 'undervoltage');
     }
-    if (state.alert_state > 0) {
+    if (bike_moved(state)) {
       sendAndroidMessage('bumped', box_name);
       if (state.alert_state > 1 && !move_alert_sent) {
         sendAlert(box_name, 'Excessive Move');
