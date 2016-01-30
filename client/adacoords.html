@@ -1,13 +1,8 @@
-
-<template name="BoxMap">
-  hi {{box_name}} there
-</template>
-
 <template name="ArduinoListing">
   <!--<img class="video" src="http://gps.chaselambda.com:3001"/>-->
   <a href="http://gps.chaselambda.com:3001">Live Stream</a>
   {{#each box_names}}
-    <h2>{{name}}</h2>
+    <h2>{{name}} (<a href="/showmap/{{name}}">Map</a>)</h2>
     {{>Buttons name}}
     {{>State name}}
   {{/each}}
@@ -25,14 +20,13 @@
 </template>
 
 <template name="Buttons">
-  <div>
-    Send Micro Message:
+  <div class='box-properties'>
+  <div>Send Micro Message:</div>
   <button class="sms-button">stream_gps</button>
   <button class="sms-button">lock</button>
   <button class="sms-button">unlock</button>
   <button class="sms-button">bat</button>
   <button class="sms-button">siren_1sec</button>
-  </div>
   {{#if has_phone}}
     <div>
       Send Phone Message:
@@ -45,22 +39,20 @@
       <button class="phone-watchdog-button">Toggle Watchdog</button>
     </div>
   {{/if}}
-
+  </div>
 </template>
 
 <template name="State">
   <div>
-    Lock: {{lock}}<br/>
-    GPS Streaming: {{stream_gps}}<br/>
-    Last State: {{lastState}}<br/>
-    Ring Status: {{ringStatus}}<br/>
-    <a href="/showmap/{{this}}">Map</a><br/>
+    <div>Lock: {{lock}}</div>
+    <div>GPS Streaming: {{stream_gps}}</div>
+    <div>Last State: {{lastState}}</div>
+    <div>Ring Status: {{ringStatus}}</div>
     {{#if has_phone}}
-      Phone Camera: {{cameraOn}}<br/>
-      Phone Watchdog: {{phoneWatchdogOn}}<br/>
-      Phone Battery: {{cameraBat}}<br/>
-      Data Count: {{frame_count}}
+    <div>Phone Camera: {{cameraOn}}</div>
+      <div>Phone Watchdog: {{phoneWatchdogOn}}</div>
+      <div>Phone Battery: {{cameraBat}}</div>
+      <div>Data Count: {{frame_count}}</div>
     {{/if}}
-
   </div>
 </template>

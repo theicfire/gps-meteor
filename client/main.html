@@ -2,19 +2,23 @@
     <title>GPS Stuff</title>
 </head>
 
-<template name="Map">
+<template name="BoxMap">
 <div style="margin-bottom: 20px">
   <div class="map-container">
     {{> googleMap name="exampleMap" options=exampleMapOptions}}
   </div>
-<form class="markerCounter">
-    <input type="text" placeholder="Marker number" value="{{coordNum}}"/>
-</form>
-<div style="float: left">
-    <b>{{count}} Coordinates</b>
-    <button class="previousCoord">Prev</button>
-    <button class="nextCoord">Next</button>
-    <button class="liveCoord" style="{{#if liveview}}background-color:green{{/if}}">Live</button>
-</div>
+
+  <a href="/">Go back Home</a> <br/>
+
+  <form class="markerCounter">
+      <input type="text" placeholder="Marker number" value="{{coordNum}}"/>
+  </form>
+
+  <div style="float: left">
+      <b>{{count}} Coordinates</b>
+      <button class="previousCoord">Prev</button>
+      <button class="nextCoord">Next</button>
+      <button class="liveCoord" style="{{#if liveview}}background-color:green{{/if}}">Live</button>
+  </div>
 </div>
 </template>

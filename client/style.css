@@ -14,7 +14,21 @@ body {
   padding: 0;
   margin: 0;
 
-  font-size: 14px;
+  font: 14px sans-serif;
+}
+
+h2 {
+  margin: 20px 0 0 0;
+}
+
+.box-properties button {
+  font: 14px sans-serif;
+  padding: 3px;
+  margin: 0px;
+}
+
+.box-properties div {
+  margin: 3px;
 }
 
 .container {
@@ -29,38 +43,6 @@ header {
   background-image: linear-gradient(to bottom, #d0edf5, #e1e5f0 100%);
   padding: 20px 15px 15px 15px;
   position: relative;
-}
-
-#login-buttons {
-  display: block;
-}
-
-h1 {
-  font-size: 1.5em;
-  margin: 0;
-  margin-bottom: 10px;
-  display: inline-block;
-  margin-right: 1em;
-}
-
-/*form {*/
-  /*margin-top: 10px;*/
-  /*margin-bottom: -10px;*/
-  /*position: relative;*/
-/*}*/
-
-.new-task input {
-  box-sizing: border-box;
-  padding: 10px 0;
-  background: transparent;
-  border: none;
-  width: 100%;
-  padding-right: 80px;
-  font-size: 1em;
-}
-
-.new-task input:focus{
-  outline: 0;
 }
 
 ul {
@@ -129,10 +111,6 @@ header .hide-completed {
 
 /* d3 stuff */
 
-body {
-  font: 10px sans-serif;
-}
-
 .axis path,
 .axis line {
   fill: none;
@@ -143,23 +121,6 @@ body {
 .x.axis path {
   display: none;
 }
-
-.lineX {
-  fill: none;
-  stroke: steelblue;
-  stroke-width: 1.5px;
-}
-.lineY {
-  fill: none;
-  stroke: red;
-  stroke-width: 1.5px;
-}
-.lineZ {
-  fill: none;
-  stroke: green;
-  stroke-width: 1.5px;
-}
-
 
 .map-container {
   width: 100%;
