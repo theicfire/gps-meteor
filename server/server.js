@@ -235,6 +235,21 @@ var bike_moved = function(state) {
   return state.last_action.substr(0, 4) === 'move';
 };
 
+var handle_gps = function(state, box_name) {
+  if (state.gps_lat > 0 && state.gps_lon > 0) {
+    var coord = {
+      lat: parseInt(state.gps_lat) / 10000.0,
+      long: parseInt(state.gps_lon) / 10000.0,
+      createdAt: new Date(),
+      type: 'gps',
+      from_arduino: true,
+      box_name: box_name,
+    };
+    log('handle_micro_msg gps insert', coord.lat + ',' + coord.long);
+    Coords.insert(coord);
+  }
+};
+
 var handle_micro_msg = function(msg) {
   msg = msg.trim();
 
@@ -244,22 +259,11 @@ var handle_micro_msg = function(msg) {
     return;
   }
   msg = msg.substr(5);
-  log('handle_micro_msg handling', box_name, msg);
 
-  if (msg.indexOf('gps:') !== -1) {
-    parts = msg.split(':');
-    var coord = {
-      lat: parseInt(parts[1]) / 10000.0,
-      long: parseInt(parts[2]) / 10000.0,
-      createdAt: new Date(),
-      type: 'gps',
-      from_arduino: true,
-      box_name: box_name,
-    };
-    log('handle_micro_msg gps insert', coord.lat + ',' + coord.long);
-    Coords.insert(coord);
-  } else if (msg.indexOf('State:') !== -1) {
+  if (msg.indexOf('State:') !== -1) {
     var state = parse_micro_state_msg(msg);
+    handle_gps(state, box_name);
+    log('raw msg:', msg);
     log('handle_micro_msg StateDict:', box_name, JSON.stringify(state));
     StateMap.upsert({key: 'lastState', box_name: box_name}, {$set: {val: ((new Date()).toISOString()) + ": " + JSON.stringify(state)}});
     if (!state.srt_sent) {
@@ -288,6 +292,9 @@ var handle_micro_msg = function(msg) {
     if (state.alert_state <= 1) {
       move_alert_sent = false;
     }
+  } else {
+    loge("Can't handle micro_msg:", msg);
+    return;
   }
   log('handle_micro_msg update boxes[' + box_name + '].micro_last_ping');
   boxes[box_name].micro_last_ping = (new Date()).getTime();
@@ -301,7 +308,7 @@ var parse_alert_stack = function(msg) {
 }
 
 var parse_micro_state_msg = function(msg) {
-  var parts = msg.substr("State:".length).split('-').map(function (x) { return x.substr(1);});
+  var parts = msg.substr("State:".length).split('|').map(function (x) { return x.substr(1);});
   return {
     stream_gps: parseInt(parts[0]),
     locked: parts[1] === '1',
@@ -311,6 +318,8 @@ var parse_micro_state_msg = function(msg) {
     bat_volt: parseInt(parts[5]),
     alert_state: parse_alert_stack(parts[6]),
     last_action: parts[7],
+    gps_lat: parseInt(parts[8]) / 10000.0,
+    gps_lon: parseInt(parts[9]) / 10000.0,
   };
 }
 
