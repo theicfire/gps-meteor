@@ -1,6 +1,7 @@
 var Twilio = Meteor.npmRequire('twilio');
 var fs = Meteor.npmRequire('fs');
 var net = Meteor.npmRequire('net');
+var moment = Meteor.npmRequire('moment-timezone');
 var os = Meteor.npmRequire('os');
 var gcm = Meteor.npmRequire('node-gcm');
 var PushBullet = Meteor.npmRequire('pushbullet');
@@ -34,8 +35,12 @@ if (os.hostname() === 'boosted-gps') {
   video_dir = '/home/video_recordings/';
 }
 
+function localDateString() {
+  return moment().tz("America/Los_Angeles").format('YYYY-MM-DDTHH:mm:ss');
+}
+
 function log() {
-  arguments[0] = '[' + new Date().toISOString() + '] ' + arguments[0];
+  arguments[0] = '[' + localDateString() + '] ' + arguments[0];
   console.log.apply(this, arguments);
 }
 
@@ -171,7 +176,7 @@ var sendAlert = function(box_name, msg) {
     return;
   }
   var CHASE_PHONE = '+15125778778';
-  msg = (new Date()).toISOString() + ' ' + box_name + ' Alert: ' + msg;
+  msg = localDateString() + ' ' + box_name + ' Alert: ' + msg;
   log('sendAlert:', msg);
   sendPushbullet(msg, '', 'nexus4bike');
   sendPushbullet(msg, '', 'iphoneoliver');
@@ -265,7 +270,7 @@ var handle_micro_msg = function(msg) {
     handle_gps(state, box_name);
     log('raw msg:', msg);
     log('handle_micro_msg StateDict:', box_name, JSON.stringify(state));
-    StateMap.upsert({key: 'lastState', box_name: box_name}, {$set: {val: ((new Date()).toISOString()) + ": " + JSON.stringify(state)}});
+    StateMap.upsert({key: 'lastState', box_name: box_name}, {$set: {val: localDateString() + ": " + JSON.stringify(state)}});
     if (!state.srt_sent) {
       var locked = StateMap.findOne({key: 'locked', box_name: box_name});
       if (locked && locked.val) {
@@ -445,7 +450,7 @@ net.createServer(Meteor.bindEnvironment( function ( socket ) {
 
 net.createServer(Meteor.bindEnvironment( function ( socket ) {
   log('connection on 4000');
-  var recording_name = (new Date()).toISOString() + '.vid';
+  var recording_name = localDateString() + '.vid';
   socket.on('end', function () {
     log('4000 streaming connection closed');
   });
