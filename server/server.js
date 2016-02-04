@@ -106,7 +106,7 @@ Router.route('/regid/:phone_id/:regid', {where: 'server'})
     });
 
 Meteor.publish('coords', function(num, box_name) {
-    console.log('subscribe to', num, box_name);
+    log('subscribe to', num, box_name);
     return Coords.find({from_arduino: true, box_name: box_name}, {'sort': ['createdAt'], skip: num, limit: 1});
 });
 
