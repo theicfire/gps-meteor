@@ -243,8 +243,8 @@ var bike_moved = function(state) {
 var handle_gps = function(state, box_name) {
   if (state.gps_lat !== 0 && state.gps_lon !== 0) {
     var coord = {
-      lat: parseInt(state.gps_lat) / 10000.0,
-      long: parseInt(state.gps_lon) / 10000.0,
+      lat: state.gps_lat,
+      long: state.gps_lon,
       createdAt: new Date(),
       type: 'gps',
       from_arduino: true,
