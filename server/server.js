@@ -359,7 +359,6 @@ Router.route('/call_completed', {where: 'server'})
       this.response.end();
   });
 
-var phoneWatchdogWaiting = false;
 Meteor.setInterval(function() {
     Object.keys(boxes).forEach(function (box_name) {
       var locked = StateMap.findOne({key: 'locked', box_name: box_name});
@@ -374,31 +373,45 @@ Meteor.setInterval(function() {
         log('watchdog: micro interval for', box_name, '=', (new Date()).getTime() - boxes[box_name].micro_last_ping);
       }
     });
-
-    Object.keys(boxes).forEach(function (box_name) {
-      var on = StateMap.findOne({key: 'phone_watchdog_on', box_name: box_name});
-      if (!on || !on.val) {
-        return;
-      }
-      if (phoneWatchdogWaiting) {
-        return;
-      }
-      if (boxes[box_name].phone_last_ping + PHONE_WATCHDOG_TIMEOUT < (new Date()).getTime()) {
-        sendAndroidMessage('alive_check', box_name);
-        phoneWatchdogWaiting = true;
-        Meteor.setTimeout(function() {
-            if (boxes[box_name].phone_last_ping + PHONE_WATCHDOG_TIMEOUT < (new Date()).getTime()) {
-              sendAlert(box_name, 'phone did not respond!');
-              StateMap.update(on._id, {$set: {val: false}});
-              StateMap.upsert({key: 'phone_watchdog_on', box_name: box_name}, {$set: {val: false}});
-            }
-            phoneWatchdogWaiting = false;
-          }, 10000);
-      } else {
-        log('watchdog: phone interval for', box_name, '=', (new Date()).getTime() - boxes[box_name].phone_last_ping);
-      }
-    });
 }, 2000);
+
+var phoneWatchdogWaiting = Object.keys(boxes).map(function(x) {var ret = {}; ret[x] = false; return ret;});
+var phoneWatchdogAttempts = Object.keys(boxes).map(function(x) {var ret = {}; ret[x] = 0; return ret;});
+var checkPhoneWatchdog = function(box_name) {
+  var on = StateMap.findOne({key: 'phone_watchdog_on', box_name: box_name});
+  if (!boxes[box_name].hasOwnProperty('phone_id')) {
+    return;
+  }
+  if (!on || !on.val) {
+    return;
+  }
+  if (!phoneWatchdogWaiting[box_name] &&
+      boxes[box_name].phone_last_ping + PHONE_WATCHDOG_TIMEOUT < (new Date()).getTime()) {
+    phoneWatchdogWaiting[box_name] = true;
+	phoneWatchdogAttempts[box_name] = 0;
+  }
+  if (phoneWatchdogWaiting[box_name]) {
+    if (boxes[box_name].phone_last_ping + PHONE_WATCHDOG_TIMEOUT < (new Date()).getTime()) {
+      if (phoneWatchdogAttempts[box_name] === 3) {
+        sendAlert(box_name, 'phone did not respond!');
+        StateMap.update(on._id, {$set: {val: false}});
+        StateMap.upsert({key: 'phone_watchdog_on', box_name: box_name}, {$set: {val: false}});
+      }
+      sendAndroidMessage('alive_check', box_name);
+      phoneWatchdogAttempts[box_name] += 1;
+    } else {
+      log('reset phoneWatchdogWaiting', box_name);
+      phoneWatchdogWaiting[box_name] = false;
+    }
+  } else {
+    log('watchdog: phone interval for', box_name, '=', (new Date()).getTime() - boxes[box_name].phone_last_ping);
+  }
+};
+Meteor.setInterval(function () {
+    Object.keys(boxes).forEach(function (box_name) {
+        checkPhoneWatchdog(box_name);
+    });
+}, 10000);
 
 net.createServer(Meteor.bindEnvironment( function ( socket ) {
   socket.on("error", function(err) {
